@@ -45,6 +45,48 @@
                  },
     "students":  [
                      {
+                         "id":  "stu-1795099335953",
+                         "name":  "NAVEEN KUMAR R",
+                         "initials":  "NK",
+                         "email":  "naveenkumar2k08u@gmail.com",
+                         "regNo":  "26M170525799",
+                         "department":  "CSE",
+                         "program":  "",
+                         "year":  "Year 1",
+                         "section":  "Sec A",
+                         "semester":  "Semester 1",
+                         "cgpa":  "-",
+                         "attendance":  0,
+                         "aiScore":  "-",
+                         "creditsCleared":  "-",
+                         "status":  "Active",
+                         "hasLoggedIn":  true,
+                         "lastLoginAt":  "2026-11-19T14:42:15.9598095Z",
+                         "aiProvisioned":  true,
+                         "avatarDataUrl":  ""
+                     },
+                     {
+                         "id":  "stu-1795079832313",
+                         "name":  "VALLARASU S",
+                         "initials":  "VS",
+                         "email":  "naveen2k08@gmail.com",
+                         "regNo":  "26M1705256",
+                         "department":  "CSE",
+                         "program":  "",
+                         "year":  "Year 1",
+                         "section":  "Sec A",
+                         "semester":  "Semester 1",
+                         "cgpa":  "-",
+                         "attendance":  0,
+                         "aiScore":  "-",
+                         "creditsCleared":  "-",
+                         "status":  "Active",
+                         "hasLoggedIn":  true,
+                         "lastLoginAt":  "2026-11-19T09:17:12.3319559Z",
+                         "aiProvisioned":  true,
+                         "avatarDataUrl":  ""
+                     },
+                     {
                          "id":  "stu-1795011563818",
                          "name":  "NAVEEN KUMAR R",
                          "initials":  "NK",
@@ -257,6 +299,16 @@
                      ],
     "activityLog":  [
                         {
+                            "id":  "act-1795099336278",
+                            "time":  "2026-11-19T14:42:16.2781782Z",
+                            "text":  "Registered student NAVEEN KUMAR R (26M170525799)"
+                        },
+                        {
+                            "id":  "act-1795079833224",
+                            "time":  "2026-11-19T09:17:13.2245078Z",
+                            "text":  "Registered student VALLARASU S (26M1705256)"
+                        },
+                        {
                             "id":  "act-1795019582899",
                             "time":  "2026-11-18T16:33:02.8997354Z",
                             "text":  "Student NAVEEN KUMAR R signed in"
@@ -395,18 +447,8 @@
                             "id":  "act-1795018417181",
                             "time":  "2026-11-18T16:13:37.181Z",
                             "text":  "Saved timetable entry: AI TOOLS \u0026 PROMPT ENGINEERING (Thu 9.20 - 10.15)"
-                        },
-                        {
-                            "id":  "act-1795018274286",
-                            "time":  "2026-11-18T16:11:14.286Z",
-                            "text":  "Updated administrator profile (Naveen Kumar)"
-                        },
-                        {
-                            "id":  "act-1795018274242",
-                            "time":  "2026-11-18T16:11:14.242Z",
-                            "text":  "Updated college architecture \u0026 AI settings"
                         }
                     ],
-    "revision":  128,
-    "updatedAt":  "2026-11-18T16:36:25.0447857Z"
+    "revision":  130,
+    "updatedAt":  "2026-11-19T14:42:16.2985631Z"
 }

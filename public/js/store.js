@@ -414,13 +414,16 @@ class RealTimeStore {
   }
 
   async _parseApiResponse(res, fallbackError) {
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     const rawText = await res.text().catch(() => '');
     const trimmed = rawText.trim();
     if (contentType.includes('text/html') || trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
       return {
         ok: false,
-        error: 'Backend server needs restart (an outdated or static server responded instead of the auth API). Close any old server window and run Start-LiveClassroom.bat.',
+        error: isLocal
+          ? 'Backend server needs restart (an outdated or static server responded instead of the auth API). Close any old server window and run Start-LiveClassroom.bat.'
+          : 'Backend authentication service is initializing or temporarily unreachable. Please verify Netlify Functions deployment.',
       };
     }
     if (!trimmed) {
@@ -437,7 +440,7 @@ class RealTimeStore {
     if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
       return {
         ok: false,
-        error: 'Please open the app through Start-LiveClassroom.bat at http://localhost:8080/ (not directly from a local file).',
+        error: 'Please open the app through http:// or https:// (not directly from a local file:// path).',
       };
     }
     return null;
@@ -514,7 +517,8 @@ class RealTimeStore {
         body: JSON.stringify({ name, password }),
       });
     } catch {
-      return { ok: false, error: 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' };
+      const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      return { ok: false, error: isLocal ? 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' : 'Cannot reach backend server. Please check your network connection.' };
     }
     const data = await this._parseApiResponse(res, 'Admin sign-in error');
     if (!res.ok || !data.ok) {
@@ -580,7 +584,8 @@ class RealTimeStore {
         body: JSON.stringify({ identifier, password }),
       });
     } catch {
-      return { ok: false, error: 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' };
+      const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      return { ok: false, error: isLocal ? 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' : 'Cannot reach backend server. Please check your network connection.' };
     }
     const data = await this._parseApiResponse(res, 'Student sign-in error');
     if (!res.ok || !data.ok) {
@@ -603,7 +608,8 @@ class RealTimeStore {
         body: JSON.stringify(payload),
       });
     } catch {
-      return { ok: false, error: 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' };
+      const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      return { ok: false, error: isLocal ? 'Cannot reach backend server on localhost. Please run Start-LiveClassroom.bat.' : 'Cannot reach backend server. Please check your network connection.' };
     }
     const data = await this._parseApiResponse(res, 'Registration failed');
     if (!res.ok || !data.ok) {

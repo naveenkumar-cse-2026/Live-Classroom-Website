@@ -1,9 +1,19 @@
-# Netlify deployment configuration for static website
+# Netlify deployment configuration for Live AI Classroom PRO
 [build]
   publish = "public"
   command = ""
 
-# SPA navigation redirect
+[functions]
+  directory = "netlify/functions"
+  included_files = ["data/**"]
+
+# API requests route to the Netlify Serverless Backend Function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA catch-all navigation redirect for frontend router
 [[redirects]]
   from = "/*"
   to = "/index.html"

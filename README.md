@@ -1,23 +1,27 @@
 # Live AI Classroom PRO
 
-Zero-dependency real-time academic platform (Student Portal + Secured Admin Operations Console + Persistent Local Backend).
+Zero-dependency real-time academic platform (Student Portal + Secured Admin Operations Console + Dual Local & Netlify Cloud Backend).
 
-## Architecture & Exportable Project Structure
+## Architecture & Project Structure
 ```text
 e:\AI app\
 ├── Start-LiveClassroom.bat   # One-click Windows launcher (starts server on port 8080 & opens browser)
-├── server.ps1                # PowerShell/.NET HTTP server + PBKDF2-SHA256 Auth + JSON persistence
-├── README.md                 # Run & export instructions
+├── server.ps1                # Local Windows PowerShell/.NET HTTP server + PBKDF2-SHA256 Auth
+├── netlify.toml              # Netlify cloud build & serverless function routing configuration
+├── netlify\
+│   └── functions\
+│       └── api.js            # Netlify Serverless Backend API (Node.js runtime, PBKDF2-SHA256, sessions)
+├── README.md                 # Run, deploy & export instructions
 ├── data\
 │   ├── db.json               # Application database (students, teachers, timetable, materials, notices, settings)
 │   ├── auth.json             # Backend-only PBKDF2-SHA256 password hashes (NEVER exposed via API or static routes)
-│   └── sessions.json         # Active bearer session tokens
+│   └── sessions.json         # Active runtime bearer session tokens
 └── public\
     ├── index.html            # Application shell & Tailwind configuration
     ├── css\app.css           # Obsidian glassmorphic styling & animations
     └── js\
         ├── app.js            # SPA router & Admin route guard
-        ├── store.js          # Real-time sync store & authenticated API client
+        ├── store.js          # Real-time sync store & authenticated API client (Local + Netlify ready)
         ├── ai-engine.js      # Gemini 2.5 API + local academic AI & math solver
         ├── ui.js             # Shared UI components, confirmation modals, responsive sidebar
         ├── views-auth.js     # Student Login/Registration (#auth) & separate Admin Login (#admin/login)
@@ -27,22 +31,28 @@ e:\AI app\
 
 ## Security & Authentication
 - **Separate Roles & Routes**:
-  - Student Portal Login: `http://localhost:8080/#auth`
-  - Administrator Login: `http://localhost:8080/#admin/login`
-  - Students have no direct access to `#admin/*` routes (blocked by both the frontend router and backend `403 Forbidden` enforcement on `PUT /api/state`).
-- **Password Storage**: All administrator and student passwords are hashed on the backend using **PBKDF2-HMAC-SHA256** (100,000 iterations + 16-byte random salt) inside `data/auth.json`. Plaintext passwords are never stored in `data/db.json` or sent to the browser.
+  - Student Portal Login: `/#auth`
+  - Administrator Login: `/#admin/login`
+  - Students have no direct access to `#admin/*` routes (enforced by the frontend router, local `server.ps1`, and cloud `netlify/functions/api.js`).
+- **Cryptographic Password Hashing**:
+  - All administrator and student passwords are protected using **PBKDF2-HMAC-SHA256** (100,000 iterations + 16-byte random salt).
+  - Both `server.ps1` (local) and `netlify/functions/api.js` (cloud) use identical cryptographic algorithms and salt formats.
+  - Plaintext passwords are never stored in `db.json` or transmitted in `GET /api/state`.
 - **Initial Admin Credentials**:
   - **Admin Name**: `Naveen Kumar`
   - **Initial Password**: `Naveen@2008`
-  - After first login, use the security banner or **College Settings → Change Admin Password** to set a permanent password.
+  - On first sign-in, use the security banner or **College Settings → Change Admin Password** to set a permanent password.
 
-## How to Run Locally
-1. Double-click **`Start-LiveClassroom.bat`** (or run `powershell -NoProfile -ExecutionPolicy Bypass -File ".\server.ps1" -Port 8080`).
-2. Open `http://localhost:8080/#auth` for Student Login or `http://localhost:8080/#admin/login` for Administrator Login.
+## How to Run Locally (Windows)
+1. Double-click **`Start-LiveClassroom.bat`**.
+2. It automatically stops any stale process on port 8080, boots `server.ps1`, and launches `http://localhost:8080/`.
 
-## How to Package & Export the Project
-Because this project uses native Windows PowerShell/.NET + zero-build ES modules (`public/`), no `npm install` or bundler build step is required:
-1. Stop any running `Start-LiveClassroom.bat` server window.
-2. Copy or ZIP the entire `e:\AI app\` folder (include `Start-LiveClassroom.bat`, `server.ps1`, `README.md`, `public\`, and `data\db.json` + `data\auth.json` if you want to carry over existing accounts/timetable; exclude `data\sessions.json` so exported copies start with fresh sessions).
-3. On any Windows PC, extract the folder and double-click `Start-LiveClassroom.bat`.
-4. **Gemini API Key**: Configure or re-enter your Gemini API key in **Student Profile → Live Gemini AI Connector** on any new browser/device (stored locally in that browser's `localStorage`).
+## How to Deploy to Netlify
+1. Connect your GitHub repository (`naveenkumar-cse-2026/Live-Classroom-Website`) to Netlify.
+2. Netlify reads `netlify.toml` automatically:
+   - **Publish directory**: `public`
+   - **Build command**: *(none needed / empty)*
+   - **Functions directory**: `netlify/functions`
+   - **API routing**: `/api/*` redirects to `/.netlify/functions/api/:splat`
+3. Netlify automatically deploys both the frontend and the serverless backend function `api.js`.
+4. Authentication, student registration, student login, admin login, timetable editing, and state synchronization work directly online without requiring your laptop to be on.
