@@ -1,0 +1,9 @@
+# Netlify deployment configuration
+[build]
+  publish = "public"
+
+# SPA navigation redirect
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

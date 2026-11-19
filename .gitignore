@@ -1,0 +1,9 @@
+# Ephemeral sessions and runtime data
+data/sessions.json
+*.log
+
+# System & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
