@@ -1,6 +1,7 @@
-# Netlify deployment configuration
+# Netlify deployment configuration for static website
 [build]
   publish = "public"
+  command = ""
 
 # SPA navigation redirect
 [[redirects]]
