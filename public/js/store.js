@@ -423,7 +423,7 @@ class RealTimeStore {
         ok: false,
         error: isLocal
           ? 'Backend server needs restart (an outdated or static server responded instead of the auth API). Close any old server window and run Start-LiveClassroom.bat.'
-          : 'Backend authentication service is initializing or temporarily unreachable. Please verify Netlify Functions deployment.',
+          : 'Backend authentication service is initializing or temporarily unreachable. Please verify Vercel deployment.',
       };
     }
     if (!trimmed) {
