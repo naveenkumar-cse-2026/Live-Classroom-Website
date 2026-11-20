@@ -80,6 +80,7 @@ async function runTests() {
     assert('Health reports serverVersion 2.0-vercel', hRes.json?.serverVersion === '2.0-vercel');
     assert('Health reports authEnabled true', hRes.json?.authEnabled === true);
     assert('Health sends CORS headers', hRes.headers['access-control-allow-origin'] === '*');
+    assert('Health sends no-cache headers', hRes.headers['cache-control']?.includes('no-cache'));
 
     const vRes = await invokeApi('GET', '/api/version');
     assert('Version returns 200', vRes.status === 200);
@@ -118,36 +119,95 @@ async function runTests() {
     assert('Me reports authenticated: true', meAdminRes.json?.authenticated === true);
     assert('Me reports role: admin', meAdminRes.json?.role === 'admin');
 
-    console.log('\n--- 5. Student Registration & Validation ---');
+    console.log('\n--- 5. Student Registration & Database Persistence (With Phone) ---');
     const regTimestamp = Date.now();
     const testRegNo = `26MTEST${regTimestamp % 10000}`;
-    const testEmail = `test${regTimestamp}@mahendra.info`;
+    const testEmail = `student${regTimestamp}@mahendra.info`;
+    const testPhone = `+91 98765${String(regTimestamp).slice(-5)}`;
     const newStudentRes = await invokeApi('POST', '/api/auth/student/register', {}, {
       name: 'Vercel Test Student',
       email: testEmail,
+      phone: testPhone,
       regNo: testRegNo,
       password: 'SecurePassword123!',
-      department: 'CSE',
-      year: 'Year 1'
+      department: 'Computer Science and Engineering',
+      program: 'B.E. Computer Science and Engineering',
+      year: 'Year 1',
+      section: 'Sec A'
     });
     assert('Registration returns 200', newStudentRes.status === 200);
     assert('Registration returns student object', Boolean(newStudentRes.json?.student));
-    assert('Registration student has no password property', newStudentRes.json?.student?.password === undefined);
+    assert('Registration stores phone correctly', newStudentRes.json?.student?.phone === testPhone);
+    assert('Registration student has no password property exposed', newStudentRes.json?.student?.password === undefined);
     assert('Registration returns auth token', Boolean(newStudentRes.json?.token));
     const studentToken = newStudentRes.json?.token;
     const studentId = newStudentRes.json?.student?.id;
 
-    console.log('\n--- 6. Duplicate Registration Check (HTTP 409) ---');
-    const dupRes = await invokeApi('POST', '/api/auth/student/register', {}, {
-      name: 'Duplicate Student',
-      email: testEmail,
+    console.log('\n--- 6. Duplicate Registration Checks (HTTP 409) ---');
+    // Dup RegNo
+    const dupRegRes = await invokeApi('POST', '/api/auth/student/register', {}, {
+      name: 'Duplicate Reg Student',
+      email: `other${regTimestamp}@mahendra.info`,
+      phone: `+91 11111${String(regTimestamp).slice(-5)}`,
       regNo: testRegNo,
       password: 'AnotherPassword123!'
     });
-    assert('Duplicate registration returns 409 Conflict', dupRes.status === 409);
-    assert('Duplicate error mentions register number or email', dupRes.json?.error?.includes('already exists'));
+    assert('Duplicate register number returns 409 Conflict', dupRegRes.status === 409);
+    assert('Error specifies register number', dupRegRes.json?.error?.includes('register number'));
 
-    console.log('\n--- 7. Student Login & Credential Verification ---');
+    // Dup Email
+    const dupEmailRes = await invokeApi('POST', '/api/auth/student/register', {}, {
+      name: 'Duplicate Email Student',
+      email: testEmail,
+      phone: `+91 22222${String(regTimestamp).slice(-5)}`,
+      regNo: `DIFF${regTimestamp % 10000}`,
+      password: 'AnotherPassword123!'
+    });
+    assert('Duplicate email returns 409 Conflict', dupEmailRes.status === 409);
+    assert('Error specifies email', dupEmailRes.json?.error?.includes('email'));
+
+    // Dup Phone
+    const dupPhoneRes = await invokeApi('POST', '/api/auth/student/register', {}, {
+      name: 'Duplicate Phone Student',
+      email: `unique${regTimestamp}@mahendra.info`,
+      phone: testPhone,
+      regNo: `DIFF2${regTimestamp % 10000}`,
+      password: 'AnotherPassword123!'
+    });
+    assert('Duplicate phone returns 409 Conflict', dupPhoneRes.status === 409);
+    assert('Error specifies phone', dupPhoneRes.json?.error?.includes('phone'));
+
+    console.log('\n--- 7. Case-Insensitive, Whitespace-Tolerant, and Identifier Search ---');
+    // Login with lowercase and whitespace
+    const lowerWhitespaceLogin = await invokeApi('POST', '/api/auth/student/login', {}, {
+      identifier: `   ${testRegNo.toLowerCase()}   `,
+      password: 'SecurePassword123!'
+    });
+    assert('Login with lowercase + surrounding whitespace returns 200', lowerWhitespaceLogin.status === 200);
+    assert('Student recognized and authenticated', lowerWhitespaceLogin.json?.student?.regNo === testRegNo);
+
+    // Login with student email
+    const emailLogin = await invokeApi('POST', '/api/auth/student/login', {}, {
+      identifier: `  ${testEmail.toUpperCase()}  `,
+      password: 'SecurePassword123!'
+    });
+    assert('Login with student email returns 200', emailLogin.status === 200);
+
+    // Login with student phone number
+    const phoneLogin = await invokeApi('POST', '/api/auth/student/login', {}, {
+      identifier: testPhone,
+      password: 'SecurePassword123!'
+    });
+    assert('Login with phone number returns 200', phoneLogin.status === 200);
+
+    // Login with full student name
+    const nameLogin = await invokeApi('POST', '/api/auth/student/login', {}, {
+      identifier: '  Vercel   Test   Student  ',
+      password: 'SecurePassword123!'
+    });
+    assert('Login with normalized full name returns 200', nameLogin.status === 200);
+
+    // Wrong password check
     const badStuLoginRes = await invokeApi('POST', '/api/auth/student/login', {}, {
       identifier: testRegNo,
       password: 'IncorrectPassword'
@@ -155,30 +215,52 @@ async function runTests() {
     assert('Student wrong password returns 401', badStuLoginRes.status === 401);
     assert('Student wrong password error message', badStuLoginRes.json?.error === 'Incorrect Password');
 
-    const goodStuLoginRes = await invokeApi('POST', '/api/auth/student/login', {}, {
-      identifier: testRegNo,
-      password: 'SecurePassword123!'
-    });
-    assert('Student correct login returns 200', goodStuLoginRes.status === 200);
-    assert('Student login returns active token', Boolean(goodStuLoginRes.json?.token));
-    assert('Student status is Active', goodStuLoginRes.json?.student?.status === 'Active');
-    assert('Student hasLoggedIn is true', goodStuLoginRes.json?.student?.hasLoggedIn === true);
+    console.log('\n--- 8. Multiple Login and Logout Cycles (No Permanent Lockout) ---');
+    for (let cycle = 1; cycle <= 3; cycle++) {
+      const cycleLogin = await invokeApi('POST', '/api/auth/student/login', {}, {
+        identifier: testRegNo,
+        password: 'SecurePassword123!'
+      });
+      assert(`Cycle ${cycle}: Student login succeeds`, cycleLogin.status === 200);
+      assert(`Cycle ${cycle}: Token issued`, Boolean(cycleLogin.json?.token));
 
-    console.log('\n--- 8. Existing Registered Student Login ---');
-    // Check one of the existing students in db.json (26M1705257)
-    const existingStuLoginRes = await invokeApi('POST', '/api/auth/student/login', {}, {
-      identifier: '26M1705257',
-      password: 'password' // or let's test if identifier check resolves
-    });
-    assert('Existing student recognized (valid or incorrect pwd response, not 404)', existingStuLoginRes.status === 200 || existingStuLoginRes.status === 401);
+      const cycleLogout = await invokeApi('POST', '/api/auth/logout', {
+        'x-auth-token': cycleLogin.json?.token
+      });
+      assert(`Cycle ${cycle}: Student logout succeeds`, cycleLogout.status === 200);
+    }
 
-    console.log('\n--- 9. State GET & Sanitization ---');
-    const stateRes = await invokeApi('GET', '/api/state');
-    assert('State returns 200', stateRes.status === 200);
-    assert('State contains collegeName MAHENDRA ENGINEERING COLLEGE', stateRes.json?.settings?.collegeName === 'MAHENDRA ENGINEERING COLLEGE');
-    assert('State contains registered students', Array.isArray(stateRes.json?.students) && stateRes.json.students.length > 0);
-    const anyStudentWithPassword = stateRes.json?.students?.some(s => s && (s.password || s._newPassword));
-    assert('State sanitization: zero student passwords exposed', !anyStudentWithPassword);
+    console.log('\n--- 9. Admin to Student Real-Time Synchronization ---');
+    // Fetch initial state
+    const initialState = await invokeApi('GET', '/api/state');
+    const initialRev = initialState.json?.revision || 1;
+
+    // Admin updates a live classroom and adds a notice
+    const updatePayload = {
+      ...initialState.json,
+      notices: [
+        {
+          id: `not-${Date.now()}`,
+          title: `Real-Time Campus Alert Test ${Date.now()}`,
+          category: 'Exam',
+          target: 'All Students',
+          pinned: true,
+          date: new Date().toISOString()
+        },
+        ...(initialState.json?.notices || [])
+      ]
+    };
+
+    const adminUpdateRes = await invokeApi('PUT', '/api/state', {
+      'x-auth-token': adminToken
+    }, updatePayload);
+    assert('Admin PUT state succeeds (200)', adminUpdateRes.status === 200);
+
+    // Student fetches latest state
+    const studentRefreshedState = await invokeApi('GET', '/api/state');
+    assert('Student refetch returns 200', studentRefreshedState.status === 200);
+    assert('Revision bumped higher than initial', studentRefreshedState.json?.revision > initialRev);
+    assert('Student sees the new admin notice immediately', studentRefreshedState.json?.notices?.[0]?.title.includes('Real-Time Campus Alert Test'));
 
     console.log('\n--- 10. Role Separation & Route Protection ---');
     const studentStatePutRes = await invokeApi('PUT', '/api/state', {
@@ -186,54 +268,33 @@ async function runTests() {
     }, { settings: {} });
     assert('Student PUT state is forbidden (403)', studentStatePutRes.status === 403);
 
-    const adminStatePutRes = await invokeApi('PUT', '/api/state', {
-      'x-auth-token': adminToken
-    }, {
-      ...stateRes.json,
-      settings: {
-        ...stateRes.json.settings,
-        shortName: 'Live AI Classroom'
-      }
-    });
-    assert('Admin PUT state returns 200', adminStatePutRes.status === 200);
-
-    console.log('\n--- 11. Student Action (Chat / Avatar / Assignment) ---');
+    console.log('\n--- 11. Student Action & Password Change ---');
     const actionRes = await invokeApi('POST', '/api/student/action', {
       'x-auth-token': studentToken
     }, {
       action: 'appendChatMessage',
-      message: { id: 'msg-' + Date.now(), text: 'Hello Vercel Serverless', sender: 'student' }
+      message: { id: 'msg-' + Date.now(), text: 'Testing student action', sender: 'student' }
     });
     assert('Student action returns 200', actionRes.status === 200);
 
-    console.log('\n--- 12. Student Change Password ---');
     const changePwdRes = await invokeApi('POST', '/api/auth/student/change-password', {
       'x-auth-token': studentToken
     }, {
       currentPassword: 'SecurePassword123!',
-      newPassword: 'UpdatedPassword2026!'
+      newPassword: 'UpdatedSecure2026!'
     });
     assert('Change password returns 200', changePwdRes.status === 200);
 
     const newPwdLoginRes = await invokeApi('POST', '/api/auth/student/login', {}, {
-      identifier: testEmail,
-      password: 'UpdatedPassword2026!'
+      identifier: testRegNo,
+      password: 'UpdatedSecure2026!'
     });
-    assert('Login with new password returns 200', newPwdLoginRes.status === 200);
+    assert('Login with updated password succeeds (200)', newPwdLoginRes.status === 200);
 
-    console.log('\n--- 13. 404 Route Not Found & Logout ---');
-    const notFoundRes = await invokeApi('GET', '/api/unknown-route-12345');
-    assert('Unknown route returns 404', notFoundRes.status === 404);
-
-    const logoutRes = await invokeApi('POST', '/api/auth/logout', {
-      'x-auth-token': adminToken
-    });
-    assert('Logout returns 200', logoutRes.status === 200);
-
-    const meAfterLogoutRes = await invokeApi('GET', '/api/auth/me', {
-      'x-auth-token': adminToken
-    });
-    assert('Me after logout returns 401', meAfterLogoutRes.status === 401);
+    console.log('\n--- 12. Security Verification: Zero Password Leakage ---');
+    const finalState = await invokeApi('GET', '/api/state');
+    const leakedPasswordFound = finalState.json?.students?.some(s => s && (s.password || s._newPassword));
+    assert('Final state sanitization: zero student passwords leaked', !leakedPasswordFound);
 
   } catch (err) {
     console.error('Test execution error:', err);

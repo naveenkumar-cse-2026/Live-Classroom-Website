@@ -131,6 +131,11 @@ export function renderAuthView(container) {
               <input id="regEmail" type="email" required placeholder="student@${esc(domain)}" class="w-full px-3.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs placeholder-white/25 focus:border-neon-purple outline-none" />
             </div>
 
+            <div>
+              <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Phone Number</label>
+              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" class="w-full px-3.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs placeholder-white/25 focus:border-neon-purple outline-none" />
+            </div>
+
             <div class="grid grid-cols-2 gap-2.5">
               <div>
                 <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Register Number</label>
@@ -258,7 +263,7 @@ export function renderAuthView(container) {
     if (loginInFlight) return;
     clearLoginErr();
 
-    const ident = container.querySelector('#loginIdentifier').value.trim();
+    const ident = container.querySelector('#loginIdentifier').value.replace(/\s+/g, ' ').trim();
     const pwd = container.querySelector('#loginPassword').value;
 
     if (!ident) {
@@ -310,6 +315,7 @@ export function renderAuthView(container) {
     const payload = {
       name: container.querySelector('#regName').value.trim(),
       email: container.querySelector('#regEmail').value.trim(),
+      phone: (container.querySelector('#regPhone')?.value || '').trim(),
       regNo: container.querySelector('#regNo').value.trim().toUpperCase(),
       section: container.querySelector('#regSection').value.trim() || 'Sec A',
       department: container.querySelector('#regDept').value.trim(),

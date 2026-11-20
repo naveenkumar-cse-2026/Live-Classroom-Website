@@ -325,6 +325,101 @@ $script:Sessions = Load-Sessions
 Repair-And-Migrate
 
 #  =========================================================================
+#    STUDENT SEARCH & IDENTIFIER MATCHING
+#    ========================================================================= 
+function Normalize-SearchText([string]$Str) {
+  if ([string]::IsNullOrWhiteSpace($Str)) { return "" }
+  return ($Str -replace '\s+', ' ').Trim().ToLowerInvariant()
+}
+
+function Normalize-Phone([string]$Str) {
+  if ([string]::IsNullOrWhiteSpace($Str)) { return "" }
+  return ($Str -replace '[^0-9]', '')
+}
+
+function Find-StudentByIdentifier([string]$Identifier) {
+  if ([string]::IsNullOrWhiteSpace($Identifier)) {
+    return @{ Match = $null; Multiple = $false; Matches = @() }
+  }
+  $identTrim = $Identifier.Trim()
+  $cleanIdent = Normalize-SearchText $Identifier
+  $digitsIdent = Normalize-Phone $Identifier
+
+  $students = @($script:Db.students | Where-Object { $null -ne $_ })
+
+  # 1. RegNo match (case-insensitive)
+  foreach ($s in $students) {
+    if (([string]$s.regNo).Trim().Equals($identTrim, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return @{ Match = $s; Multiple = $false; Matches = @($s) }
+    }
+  }
+
+  # 2. Email match (case-insensitive)
+  foreach ($s in $students) {
+    if (([string]$s.email).Trim().Equals($identTrim, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return @{ Match = $s; Multiple = $false; Matches = @($s) }
+    }
+  }
+
+  # 3. Phone match (min 7 digits)
+  if ($digitsIdent.Length -ge 7) {
+    $phoneMatches = @()
+    foreach ($s in $students) {
+      $sPhone = Normalize-Phone ([string]$s.phone)
+      if ($sPhone.Length -ge 7 -and ($sPhone -eq $digitsIdent -or $sPhone.EndsWith($digitsIdent) -or $digitsIdent.EndsWith($sPhone))) {
+        $phoneMatches += $s
+      }
+    }
+    if ($phoneMatches.Count -eq 1) {
+      return @{ Match = $phoneMatches[0]; Multiple = $false; Matches = $phoneMatches }
+    }
+    if ($phoneMatches.Count -gt 1) {
+      return @{ Match = $null; Multiple = $true; Matches = $phoneMatches }
+    }
+  }
+
+  # 4. Name match (whitespace-normalized)
+  $nameMatches = @()
+  foreach ($s in $students) {
+    $normName = Normalize-SearchText ([string]$s.name)
+    if ($normName -eq $cleanIdent) {
+      $nameMatches += $s
+    }
+  }
+  if ($nameMatches.Count -eq 1) {
+    return @{ Match = $nameMatches[0]; Multiple = $false; Matches = $nameMatches }
+  }
+  if ($nameMatches.Count -gt 1) {
+    return @{ Match = $null; Multiple = $true; Matches = $nameMatches }
+  }
+
+  return @{ Match = $null; Multiple = $false; Matches = @() }
+}
+
+function Find-DuplicateStudent([string]$RegNo, [string]$Email, [string]$Phone) {
+  $targetReg = $RegNo.Trim()
+  $targetEmail = $Email.Trim()
+  $targetPhone = Normalize-Phone $Phone
+
+  $students = @($script:Db.students | Where-Object { $null -ne $_ })
+  foreach ($s in $students) {
+    if (-not [string]::IsNullOrWhiteSpace($targetReg) -and ([string]$s.regNo).Trim().Equals($targetReg, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return @{ Duplicate = $true; Message = "A student with that register number already exists" }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($targetEmail) -and ([string]$s.email).Trim().Equals($targetEmail, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return @{ Duplicate = $true; Message = "A student with that email already exists" }
+    }
+    if ($targetPhone.Length -ge 7) {
+      $sPhone = Normalize-Phone ([string]$s.phone)
+      if ($sPhone.Length -ge 7 -and $sPhone -eq $targetPhone) {
+        return @{ Duplicate = $true; Message = "A student with that phone number already exists" }
+      }
+    }
+  }
+  return @{ Duplicate = $false; Message = "" }
+}
+
+#  =========================================================================
 #    HTTP SERVER UTILITIES
 #    ========================================================================= 
 function Get-MimeType([string]$Path) {
@@ -355,7 +450,9 @@ function Write-HttpResponse {
                "Access-Control-Allow-Origin: *`r`n" +
                "Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS`r`n" +
                "Access-Control-Allow-Headers: Content-Type, X-Auth-Token, Authorization`r`n" +
-               "Cache-Control: no-store`r`n" +
+               "Cache-Control: no-store, no-cache, must-revalidate, max-age=0`r`n" +
+               "Pragma: no-cache`r`n" +
+               "Expires: 0`r`n" +
                "Connection: close`r`n`r`n"
   $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($headerStr)
   $Stream.Write($headerBytes, 0, $headerBytes.Length)
@@ -672,31 +769,12 @@ try {
           Send-Json $stream @{ ok = $false; error = "Please enter your password" } 400 "Bad Request"
           continue
         }
-        $match = $null
-        foreach ($s in @($script:Db.students)) {
-          if ($null -eq $s) { continue }
-          if (([string]$s.regNo).Trim().Equals($ident, [System.StringComparison]::OrdinalIgnoreCase) -or
-              ([string]$s.email).Trim().Equals($ident, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $match = $s
-            break
-          }
+        $searchRes = Find-StudentByIdentifier $ident
+        if ($searchRes.Multiple) {
+          Send-Json $stream @{ ok = $false; error = "Multiple students share that name. Please sign in using your register number or email." } 400 "Bad Request"
+          continue
         }
-        if ($null -eq $match) {
-          $nameMatches = @()
-          foreach ($s in @($script:Db.students)) {
-            if ($null -eq $s) { continue }
-            $normStuName = (([string]$s.name) -replace '\s+', ' ').Trim()
-            if ($normStuName.Equals($ident, [System.StringComparison]::OrdinalIgnoreCase)) {
-              $nameMatches += $s
-            }
-          }
-          if ($nameMatches.Count -eq 1) {
-            $match = $nameMatches[0]
-          } elseif ($nameMatches.Count -gt 1) {
-            Send-Json $stream @{ ok = $false; error = "Multiple students share that name. Please sign in using your register number or email." } 400 "Bad Request"
-            continue
-          }
-        }
+        $match = $searchRes.Match
         if ($null -eq $match) {
           Send-Json $stream @{ ok = $false; error = "Student account not found" } 401 "Unauthorized"
           continue
@@ -735,6 +813,7 @@ try {
         $body = $req.Body | ConvertFrom-Json
         $name = ([string]$body.name).Trim()
         $email = ([string]$body.email).Trim()
+        $phone = if ($body.phone) { ([string]$body.phone).Trim() } else { "" }
         $regNo = ([string]$body.regNo).Trim().ToUpperInvariant()
         $pwd = [string]$body.password
         if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($email) -or [string]::IsNullOrWhiteSpace($regNo)) {
@@ -745,17 +824,9 @@ try {
           Send-Json $stream @{ ok = $false; error = "Password must be at least 6 characters" } 400 "Bad Request"
           continue
         }
-        $dupFound = $false
-        foreach ($s in @($script:Db.students)) {
-          if ($null -eq $s) { continue }
-          if (([string]$s.regNo).Equals($regNo, [System.StringComparison]::OrdinalIgnoreCase) -or
-              ([string]$s.email).Equals($email, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $dupFound = $true
-            break
-          }
-        }
-        if ($dupFound) {
-          Send-Json $stream @{ ok = $false; error = "A student with that register number or email already exists" } 409 "Conflict"
+        $dupCheck = Find-DuplicateStudent $regNo $email $phone
+        if ($dupCheck.Duplicate) {
+          Send-Json $stream @{ ok = $false; error = $dupCheck.Message } 409 "Conflict"
           continue
         }
         $stuId = "stu-$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())"
@@ -765,6 +836,7 @@ try {
           name = $name
           initials = Make-Initials $name
           email = $email
+          phone = $phone
           regNo = $regNo
           department = ([string]$body.department).Trim()
           program = ([string]$body.program).Trim()

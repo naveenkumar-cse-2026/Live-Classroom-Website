@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 
 // =========================================================================
@@ -57,14 +58,18 @@ function makeInitials(name = '') {
 }
 
 // =========================================================================
+// =========================================================================
 // DATA PERSISTENCE & IN-MEMORY CACHE
 // =========================================================================
 let cachedDb = null;
 let cachedAuth = null;
 let cachedSessions = {};
+let sessionsLoaded = false;
 
 function locateFile(filename) {
+  const tmpDir = os.tmpdir ? os.tmpdir() : '/tmp';
   const candidates = [
+    path.join(tmpDir, filename),
     path.join('/tmp', filename),
     path.resolve(process.cwd(), 'data', filename),
     path.resolve(__dirname, '../data', filename),
@@ -72,9 +77,114 @@ function locateFile(filename) {
     path.join(__dirname, filename),
   ];
   for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
+    try {
+      if (fs.existsSync(c)) return c;
+    } catch {}
   }
   return null;
+}
+
+function saveLocalFile(filename, data) {
+  const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  const tmpDir = os.tmpdir ? os.tmpdir() : '/tmp';
+  try {
+    fs.writeFileSync(path.join(tmpDir, filename), content, 'utf8');
+  } catch {}
+  try {
+    if (tmpDir !== '/tmp') fs.writeFileSync(path.join('/tmp', filename), content, 'utf8');
+  } catch {}
+  try {
+    const localData = path.resolve(process.cwd(), 'data');
+    if (fs.existsSync(localData)) {
+      fs.writeFileSync(path.join(localData, filename), content, 'utf8');
+    }
+  } catch {}
+}
+
+function loadSessions() {
+  if (sessionsLoaded) return;
+  sessionsLoaded = true;
+  const sessPath = locateFile('sessions.json');
+  if (sessPath) {
+    try {
+      const data = JSON.parse(fs.readFileSync(sessPath, 'utf8'));
+      if (data && typeof data === 'object') {
+        const now = new Date();
+        for (const [k, v] of Object.entries(data)) {
+          if (v && v.expiresAt && new Date(v.expiresAt) > now) {
+            cachedSessions[k] = v;
+          }
+        }
+      }
+    } catch {}
+  }
+}
+
+function saveSessions() {
+  saveLocalFile('sessions.json', cachedSessions);
+}
+
+function normalizeSearchText(str) {
+  return String(str || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function normalizePhone(str) {
+  return String(str || '').replace(/[^0-9]/g, '');
+}
+
+function findStudentByIdentifier(students, identifier) {
+  if (!identifier) return { match: null, multiple: false };
+  const ident = String(identifier).trim();
+  const lowerIdent = ident.toLowerCase();
+  const cleanIdent = normalizeSearchText(ident);
+  const digitsIdent = normalizePhone(ident);
+
+  const list = Array.isArray(students) ? students.filter(Boolean) : [];
+
+  // 1. Direct match on register number (case-insensitive, trimmed)
+  const regMatch = list.find((s) => String(s.regNo || '').trim().toLowerCase() === lowerIdent);
+  if (regMatch) return { match: regMatch, multiple: false };
+
+  // 2. Direct match on email (case-insensitive, trimmed)
+  const emailMatch = list.find((s) => String(s.email || '').trim().toLowerCase() === lowerIdent);
+  if (emailMatch) return { match: emailMatch, multiple: false };
+
+  // 3. Match on phone number if digits are provided (minimum 7 digits)
+  if (digitsIdent.length >= 7) {
+    const phoneMatches = list.filter((s) => {
+      const sDigits = normalizePhone(s.phone);
+      return sDigits && (sDigits === digitsIdent || sDigits.endsWith(digitsIdent) || digitsIdent.endsWith(sDigits));
+    });
+    if (phoneMatches.length === 1) return { match: phoneMatches[0], multiple: false };
+    if (phoneMatches.length > 1) return { match: null, multiple: true, matches: phoneMatches };
+  }
+
+  // 4. Match on student full name (whitespace-normalized, case-insensitive)
+  const nameMatches = list.filter((s) => normalizeSearchText(s.name) === cleanIdent);
+  if (nameMatches.length === 1) return { match: nameMatches[0], multiple: false };
+  if (nameMatches.length > 1) return { match: null, multiple: true, matches: nameMatches };
+
+  return { match: null, multiple: false };
+}
+
+function findDuplicateStudent(students, { regNo, email, phone }) {
+  const list = Array.isArray(students) ? students.filter(Boolean) : [];
+  const targetReg = String(regNo || '').trim().toUpperCase();
+  const targetEmail = String(email || '').trim().toLowerCase();
+  const targetPhoneDigits = normalizePhone(phone);
+
+  for (const s of list) {
+    if (targetReg && String(s.regNo || '').trim().toUpperCase() === targetReg) {
+      return { duplicate: true, field: 'register number', message: 'A student with that register number already exists' };
+    }
+    if (targetEmail && String(s.email || '').trim().toLowerCase() === targetEmail) {
+      return { duplicate: true, field: 'email', message: 'A student with that email already exists' };
+    }
+    if (targetPhoneDigits && targetPhoneDigits.length >= 7 && normalizePhone(s.phone) === targetPhoneDigits) {
+      return { duplicate: true, field: 'phone', message: 'A student with that phone number already exists' };
+    }
+  }
+  return { duplicate: false };
 }
 
 function getInitialDb() {
@@ -222,35 +332,34 @@ async function saveDb(db) {
   cachedDb = db;
   // Cloud sync
   cloudSet('live_classroom_db', db).catch(() => {});
-  // /tmp fallback
-  try {
-    fs.writeFileSync(path.join('/tmp', 'db.json'), JSON.stringify(db, null, 2), 'utf8');
-  } catch {}
+  // Local filesystem persistence (/tmp and data/db.json)
+  saveLocalFile('db.json', db);
 }
 
 async function saveAuth(auth) {
   cachedAuth = auth;
   // Cloud sync
   cloudSet('live_classroom_auth', auth).catch(() => {});
-  // /tmp fallback
-  try {
-    fs.writeFileSync(path.join('/tmp', 'auth.json'), JSON.stringify(auth, null, 2), 'utf8');
-  } catch {}
+  // Local filesystem persistence (/tmp and data/auth.json)
+  saveLocalFile('auth.json', auth);
 }
 
 // Session Management
 function getSession(token) {
   if (!token) return null;
+  loadSessions();
   const sess = cachedSessions[token];
   if (!sess) return null;
   if (new Date(sess.expiresAt) <= new Date()) {
     delete cachedSessions[token];
+    saveSessions();
     return null;
   }
   return sess;
 }
 
 function createSession(role, userId, name) {
+  loadSessions();
   const token = generateToken();
   const session = {
     token,
@@ -261,12 +370,14 @@ function createSession(role, userId, name) {
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   };
   cachedSessions[token] = session;
+  saveSessions();
   return session;
 }
 
 function removeSession(token) {
   if (token && cachedSessions[token]) {
     delete cachedSessions[token];
+    saveSessions();
   }
 }
 
@@ -299,7 +410,9 @@ function sendJson(res, statusCode, data) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   if (typeof res.status === 'function') {
     res.status(statusCode);
   } else {
@@ -559,27 +672,16 @@ module.exports = async function handler(req, res) {
       }
 
       const students = Array.isArray(db.students) ? db.students : [];
-      let match = students.find((s) =>
-        s && (
-          String(s.regNo || '').trim().toLowerCase() === ident.toLowerCase() ||
-          String(s.email || '').trim().toLowerCase() === ident.toLowerCase()
-        )
-      );
+      const searchResult = findStudentByIdentifier(students, ident);
 
-      if (!match) {
-        const nameMatches = students.filter((s) =>
-          s && String(s.name || '').replace(/\s+/g, ' ').trim().toLowerCase() === ident.toLowerCase()
-        );
-        if (nameMatches.length === 1) {
-          match = nameMatches[0];
-        } else if (nameMatches.length > 1) {
-          return sendJson(res, 400, {
-            ok: false,
-            error: 'Multiple students share that name. Please sign in using your register number or email.'
-          });
-        }
+      if (searchResult.multiple) {
+        return sendJson(res, 400, {
+          ok: false,
+          error: 'Multiple students match that search. Please sign in using your register number or email.'
+        });
       }
 
+      const match = searchResult.match;
       if (!match) {
         return sendJson(res, 401, { ok: false, error: 'Student account not found' });
       }
@@ -626,6 +728,7 @@ module.exports = async function handler(req, res) {
       }
       const name = String(body.name || '').trim();
       const email = String(body.email || '').trim().toLowerCase();
+      const phone = String(body.phone || '').trim();
       const regNo = String(body.regNo || '').trim().toUpperCase();
       const pwd = String(body.password || '');
 
@@ -637,14 +740,9 @@ module.exports = async function handler(req, res) {
       }
 
       const students = Array.isArray(db.students) ? db.students : [];
-      const dup = students.find((s) =>
-        s && (
-          String(s.regNo || '').trim().toUpperCase() === regNo ||
-          String(s.email || '').trim().toLowerCase() === email
-        )
-      );
-      if (dup) {
-        return sendJson(res, 409, { ok: false, error: 'A student with that register number or email already exists' });
+      const dupCheck = findDuplicateStudent(students, { regNo, email, phone });
+      if (dupCheck.duplicate) {
+        return sendJson(res, 409, { ok: false, error: dupCheck.message });
       }
 
       const stuId = 'stu-' + Date.now();
@@ -654,6 +752,7 @@ module.exports = async function handler(req, res) {
         name,
         initials: makeInitials(name),
         email,
+        phone,
         regNo,
         department: String(body.department || '').trim(),
         program: String(body.program || '').trim(),

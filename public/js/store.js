@@ -154,12 +154,13 @@ class RealTimeStore {
     // Normalize programs
     state.settings.programs = asArray(state.settings.programs).filter(Boolean);
 
-    // Normalize & purge demo students; ensure hasLoggedIn boolean exists and strip any plaintext passwords
+    // Normalize & purge demo students; ensure hasLoggedIn boolean exists, phone is preserved, and strip any plaintext passwords
     state.students = asArray(state.students)
       .filter((s) => s && !DEMO_IDS.students.has(s.id))
       .map((s) => {
         const copy = {
           ...s,
+          phone: s.phone ? String(s.phone).trim() : '',
           hasLoggedIn: s.hasLoggedIn === true,
           lastLoginAt: s.lastLoginAt || null,
         };
@@ -218,9 +219,27 @@ class RealTimeStore {
 
   async init() {
     this.authApiReady = false;
+    this._startPolling();
+
+    // Register visibility and focus listeners for instant sync when student switches tabs
+    if (typeof window !== 'undefined' && !this._syncListenersAttached) {
+      window.addEventListener('focus', () => {
+        this._refreshFromServer({ silent: false });
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this._refreshFromServer({ silent: false });
+        }
+      });
+      this._syncListenersAttached = true;
+    }
+
     if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
       try {
-        const res = await fetch('/api/state', { cache: 'no-store' });
+        const res = await fetch(`/api/state?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        });
         const ct = (res.headers.get('content-type') || '').toLowerCase();
         if (res.ok && ct.includes('application/json')) {
           const rawServer = await res.json();
@@ -229,7 +248,7 @@ class RealTimeStore {
           this.serverConnected = true;
           this.syncMode = 'live-server';
           try {
-            const hRes = await fetch('/api/health', { cache: 'no-store' });
+            const hRes = await fetch(`/api/health?_t=${Date.now()}`, { cache: 'no-store' });
             const hCt = (hRes.headers.get('content-type') || '').toLowerCase();
             if (hRes.ok && hCt.includes('application/json')) {
               const health = await hRes.json();
@@ -239,7 +258,6 @@ class RealTimeStore {
           this._saveLocal(this.state);
           await this._verifyStoredSessions();
           this._notify();
-          this._startPolling();
           return;
         }
       } catch {
@@ -256,27 +274,29 @@ class RealTimeStore {
     const adminSess = this.getAdminSession();
     if (adminSess?.token) {
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
           headers: { 'X-Auth-Token': adminSess.token },
           cache: 'no-store',
         });
         const ct = (res.headers.get('content-type') || '').toLowerCase();
-        if (res.ok && ct.includes('application/json')) {
-          const info = await res.json();
-          if (info.authenticated && info.role === 'admin') {
-            this.setAdminSession({
-              ...adminSess,
-              name: info.name,
-              mustChangePassword: !!info.mustChangePassword,
-            });
-          } else {
+        if (ct.includes('application/json')) {
+          if (res.status === 401 || res.status === 403) {
             this.clearAdminSession();
+          } else if (res.ok) {
+            const info = await res.json();
+            if (info.authenticated && info.role === 'admin') {
+              this.setAdminSession({
+                ...adminSess,
+                name: info.name,
+                mustChangePassword: !!info.mustChangePassword,
+              });
+            } else {
+              this.clearAdminSession();
+            }
           }
-        } else {
-          this.clearAdminSession();
         }
       } catch {
-        this.clearAdminSession();
+        // Network offline: preserve session locally
       }
     }
 
@@ -284,25 +304,24 @@ class RealTimeStore {
     const stuSess = this.getSession();
     if (stuSess?.token) {
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
           headers: { 'X-Auth-Token': stuSess.token },
           cache: 'no-store',
         });
         const ct = (res.headers.get('content-type') || '').toLowerCase();
-        if (!res.ok || !ct.includes('application/json')) {
-          this.clearSession();
-        } else {
-          const info = await res.json();
-          if (!info.authenticated || info.role !== 'student') {
+        if (ct.includes('application/json')) {
+          if (res.status === 401 || res.status === 403) {
             this.clearSession();
+          } else if (res.ok) {
+            const info = await res.json();
+            if (!info.authenticated || info.role !== 'student') {
+              this.clearSession();
+            }
           }
         }
       } catch {
-        this.clearSession();
+        // Network offline: preserve session locally
       }
-    } else if (stuSess?.studentId) {
-      // Legacy tokenless session from before backend auth -> force fresh secure login
-      this.clearSession();
     }
   }
 
@@ -311,11 +330,22 @@ class RealTimeStore {
     this.pollTimer = setInterval(async () => {
       if (this.isSaving) return;
       try {
-        const res = await fetch('/api/version', { cache: 'no-store' });
+        const res = await fetch(`/api/version?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        });
         if (!res.ok) return;
         const info = await res.json();
-        if (info.revision > (this.state.revision || 0)) {
-          const stateRes = await fetch('/api/state', { cache: 'no-store' });
+        const serverRev = Number(info.revision) || 0;
+        const localRev = Number(this.state.revision) || 0;
+        const serverUp = String(info.updatedAt || '');
+        const localUp = String(this.state.updatedAt || '');
+
+        if (serverRev !== localRev || (serverUp && serverUp !== localUp)) {
+          const stateRes = await fetch(`/api/state?_t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+          });
           if (stateRes.ok) {
             const fresh = this._sanitizeState(await stateRes.json());
             const latestAct = fresh.activityLog?.[0]?.text || null;
@@ -328,7 +358,7 @@ class RealTimeStore {
       } catch {
         this.serverConnected = false;
       }
-    }, 1500);
+    }, 1000);
   }
 
   subscribe(fn) {
@@ -401,13 +431,16 @@ class RealTimeStore {
   }
 
   async _refreshFromServer({ silent = false } = {}) {
-    if (!this.serverConnected) return;
     try {
-      const res = await fetch('/api/state', { cache: 'no-store' });
+      const res = await fetch(`/api/state?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+      });
       const ct = (res.headers.get('content-type') || '').toLowerCase();
       if (res.ok && ct.includes('application/json')) {
         this.state = this._sanitizeState(await res.json());
         this._saveLocal(this.state);
+        this.serverConnected = true;
         if (!silent) this._notify();
       }
     } catch {}
@@ -476,7 +509,10 @@ class RealTimeStore {
 
   isStudentAuthenticated() {
     const sess = this.getSession();
-    return Boolean(sess?.token && sess?.studentId && this.state.students.some((s) => s.id === sess.studentId));
+    if (!sess?.token || !sess?.studentId) return false;
+    if (this.state.students.some((s) => String(s.id) === String(sess.studentId) && s.status !== 'Deactivated')) return true;
+    if (sess.student && sess.student.status !== 'Deactivated') return true;
+    return false;
   }
 
   // Admin Session helpers (strictly separated from Student Session)
@@ -572,16 +608,18 @@ class RealTimeStore {
   }
 
   async loginStudent(identifier, password) {
-    if (!identifier) return { ok: false, error: 'Please enter your register number, email, or name' };
+    const cleanIdent = String(identifier || '').replace(/\s+/g, ' ').trim();
+    if (!cleanIdent) return { ok: false, error: 'Please enter your register number, email, or name' };
     if (!password) return { ok: false, error: 'Please enter your password' };
     const protoErr = this._ensureHttpProtocol();
     if (protoErr) return protoErr;
     let res;
     try {
-      res = await fetch('/api/auth/student/login', {
+      res = await fetch(`/api/auth/student/login?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        cache: 'no-store',
+        body: JSON.stringify({ identifier: cleanIdent, password }),
       });
     } catch {
       const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -592,7 +630,20 @@ class RealTimeStore {
       return { ok: false, error: data.error || 'Incorrect Password' };
     }
     this._markBackendReachable();
-    this.setSession({ role: 'student', studentId: data.student.id, token: data.token });
+    this.setSession({ role: 'student', studentId: data.student.id, token: data.token, student: data.student });
+    if (data.student) {
+      if (!Array.isArray(this.state.students)) this.state.students = [];
+      const idx = this.state.students.findIndex(
+        (s) => String(s.id) === String(data.student.id) ||
+               (data.student.regNo && String(s.regNo || '').toUpperCase() === String(data.student.regNo).toUpperCase())
+      );
+      if (idx >= 0) {
+        this.state.students[idx] = { ...this.state.students[idx], ...data.student };
+      } else {
+        this.state.students.unshift(data.student);
+      }
+      this._saveLocal(this.state);
+    }
     await this._refreshFromServer({ silent: true });
     return { ok: true, student: data.student };
   }
@@ -602,9 +653,10 @@ class RealTimeStore {
     if (protoErr) return protoErr;
     let res;
     try {
-      res = await fetch('/api/auth/student/register', {
+      res = await fetch(`/api/auth/student/register?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        cache: 'no-store',
         body: JSON.stringify(payload),
       });
     } catch {
@@ -616,7 +668,20 @@ class RealTimeStore {
       return { ok: false, error: data.error || 'Registration failed' };
     }
     this._markBackendReachable();
-    this.setSession({ role: 'student', studentId: data.student.id, token: data.token });
+    this.setSession({ role: 'student', studentId: data.student.id, token: data.token, student: data.student });
+    if (data.student) {
+      if (!Array.isArray(this.state.students)) this.state.students = [];
+      const idx = this.state.students.findIndex(
+        (s) => String(s.id) === String(data.student.id) ||
+               (data.student.regNo && String(s.regNo || '').toUpperCase() === String(data.student.regNo).toUpperCase())
+      );
+      if (idx >= 0) {
+        this.state.students[idx] = { ...this.state.students[idx], ...data.student };
+      } else {
+        this.state.students.unshift(data.student);
+      }
+      this._saveLocal(this.state);
+    }
     await this._refreshFromServer({ silent: true });
     return { ok: true, student: data.student };
   }
@@ -645,20 +710,26 @@ class RealTimeStore {
 
   async logoutStudent() {
     const token = this.getSession()?.token;
-    if (token && this.serverConnected) {
+    if (token) {
       try {
-        await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': token } });
+        await fetch(`/api/auth/logout?_t=${Date.now()}`, {
+          method: 'POST',
+          headers: { 'X-Auth-Token': token, 'Cache-Control': 'no-cache' },
+          cache: 'no-store'
+        });
       } catch {}
     }
     this.clearSession();
+    this._notify('Student signed out');
   }
 
   async _studentAction(body) {
     const token = this.getSession()?.token || this.getAdminSession()?.token || '';
     if (!this.serverConnected || !token) return false;
-    const res = await fetch('/api/student/action', {
+    const res = await fetch(`/api/student/action?_t=${Date.now()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+      cache: 'no-store',
       body: JSON.stringify(body),
     });
     if (res.ok) {
@@ -671,8 +742,11 @@ class RealTimeStore {
   getCurrentStudent() {
     const sess = this.getSession();
     if (sess?.token && sess?.studentId) {
-      const match = this.state.students.find((s) => s.id === sess.studentId);
+      const match = (this.state.students || []).find((s) => String(s.id) === String(sess.studentId));
       if (match && match.status !== 'Deactivated') return match;
+      if (sess.student && sess.student.status !== 'Deactivated') {
+        return sess.student;
+      }
     }
     return null;
   }
@@ -700,6 +774,7 @@ class RealTimeStore {
       name: (payload.name || '').trim(),
       initials: makeInitials(payload.name),
       email: (payload.email || '').trim(),
+      phone: (payload.phone || '').trim(),
       regNo: (payload.regNo || '').trim().toUpperCase(),
       department: (payload.department || '').trim(),
       program: (payload.program || '').trim(),
@@ -741,6 +816,9 @@ class RealTimeStore {
     if (cleanPatch.password) {
       cleanPatch._newPassword = cleanPatch.password;
       delete cleanPatch.password;
+    }
+    if (cleanPatch.phone !== undefined) {
+      cleanPatch.phone = String(cleanPatch.phone || '').trim();
     }
     await this.mutate((s) => {
       const target = s.students.find((x) => x.id === id);

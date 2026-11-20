@@ -1113,7 +1113,7 @@ export function renderStudentProfile(container) {
           </div>
           <h2 class="font-headline text-headline-sm text-white">${esc(student.name)}</h2>
           <p class="font-code text-xs text-neon-purple font-medium mt-0.5">${esc(student.regNo)}</p>
-          <p class="text-xs text-cyber-lavender/70 mt-1">${esc(student.email)}</p>
+          <p class="text-xs text-cyber-lavender/70 mt-1">${esc(student.email)}${student.phone ? ` • <span class="font-code text-neon-purple">${esc(student.phone)}</span>` : ''}</p>
 
           <div class="mt-4 pt-4 border-t border-glass-border flex items-center justify-around text-xs font-code">
             <div>

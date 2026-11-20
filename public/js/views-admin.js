@@ -206,6 +206,10 @@ function openAddEditStudentModal(existing = null) {
             <input id="stuEmail" type="email" required value="${esc(existing?.email || '')}" placeholder="student@${esc(domain)}" class="w-full px-3.5 py-2.5 rounded-md bg-[#090611] border border-glass-border text-white text-sm focus:border-neon-purple outline-none" />
           </div>
           <div>
+            <label class="block text-label-md text-cyber-lavender mb-1.5">Phone Number</label>
+            <input id="stuPhone" type="tel" value="${esc(existing?.phone || '')}" placeholder="e.g. +91 9876543210" class="w-full px-3.5 py-2.5 rounded-md bg-[#090611] border border-glass-border text-white text-sm focus:border-neon-purple outline-none" />
+          </div>
+          <div>
             <label class="block text-label-md text-cyber-lavender mb-1.5">Register Number</label>
             <input id="stuRegNo" type="text" required value="${esc(existing?.regNo || '')}" placeholder="Enter register number" class="w-full px-3.5 py-2.5 rounded-md bg-[#090611] border border-glass-border text-white text-sm font-code focus:border-neon-purple outline-none" />
           </div>
@@ -264,6 +268,7 @@ function openAddEditStudentModal(existing = null) {
       const payload = {
         name: host.querySelector('#stuName').value.trim(),
         email: host.querySelector('#stuEmail').value.trim(),
+        phone: (host.querySelector('#stuPhone')?.value || '').trim(),
         regNo: host.querySelector('#stuRegNo').value.trim().toUpperCase(),
         department: host.querySelector('#stuDept').value.trim(),
         program: host.querySelector('#stuProgram').value.trim(),
@@ -932,7 +937,7 @@ export function renderAdminStudents(container) {
                               </div>
                               <div>
                                 <div class="font-label font-semibold text-white">${esc(stu.name)}</div>
-                                <div class="text-xs text-cyber-lavender/60">${esc(stu.email)}</div>
+                                <div class="text-xs text-cyber-lavender/60">${esc(stu.email)}${stu.phone ? ` • <span class="font-code text-cyber-lavender/75">${esc(stu.phone)}</span>` : ''}</div>
                               </div>
                             </div>
                           </td>
@@ -1015,8 +1020,8 @@ export function renderAdminStudents(container) {
   });
 
   container.querySelector('#exportCsvBtn').addEventListener('click', () => {
-    const header = 'Name,Email,RegisterNo,Department,Program,Year,Section,HasLoggedIn,Status\n';
-    const rows = filtered.map((s) => `"${s.name}","${s.email}","${s.regNo}","${s.department || ''}","${s.program || ''}","${s.year}","${s.section}","${s.hasLoggedIn ? 'Yes' : 'No'}","${s.status}"`).join('\n');
+    const header = 'Name,Email,Phone,RegisterNo,Department,Program,Year,Section,HasLoggedIn,Status\n';
+    const rows = filtered.map((s) => `"${s.name}","${s.email}","${s.phone || ''}","${s.regNo}","${s.department || ''}","${s.program || ''}","${s.year}","${s.section}","${s.hasLoggedIn ? 'Yes' : 'No'}","${s.status}"`).join('\n');
     downloadTextFile('LiveAIClassroom_Students.csv', header + rows);
     showToast(`Exported ${filtered.length} student records to CSV!`, 'success');
   });
