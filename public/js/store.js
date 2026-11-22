@@ -86,6 +86,7 @@ class RealTimeStore {
     this.serverConnected = false;
     this.pollTimer = null;
     this.isSaving = false;
+    this.heartbeatTimer = null;
     this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
 
     if (this.channel) {
@@ -257,6 +258,8 @@ class RealTimeStore {
           } catch {}
           this._saveLocal(this.state);
           await this._verifyStoredSessions();
+          // Resume heartbeat if student session is valid (page refresh while logged in)
+          if (this.getSession()?.token) this.startHeartbeat();
           this._notify();
           return;
         }
@@ -267,6 +270,8 @@ class RealTimeStore {
     }
     this._saveLocal(this.state);
     this._notify();
+    // Resume heartbeat if student is already logged in (page refresh)
+    if (this.getSession()?.token) this.startHeartbeat();
   }
 
   async _verifyStoredSessions() {
@@ -324,6 +329,43 @@ class RealTimeStore {
       }
     }
   }
+
+  // ===================== HEARTBEAT (online/offline presence) =====================
+  startHeartbeat() {
+    if (this.heartbeatTimer) return; // already running
+    const send = async () => {
+      const token = this.getSession()?.token;
+      if (!token || !this.serverConnected) return;
+      try {
+        await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+          cache: 'no-store',
+        });
+      } catch { /* silently ignore — offline */ }
+    };
+    send(); // fire immediately on login
+    this.heartbeatTimer = setInterval(send, 30000); // every 30s
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  async getOnlineStudents() {
+    try {
+      const res = await fetch(`/api/online-students?_t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.online || [];
+      }
+    } catch {}
+    return [];
+  }
+  // ===========================================================================
 
   _startPolling() {
     if (this.pollTimer) clearInterval(this.pollTimer);
@@ -645,6 +687,7 @@ class RealTimeStore {
       this._saveLocal(this.state);
     }
     await this._refreshFromServer({ silent: true });
+    this.startHeartbeat();
     return { ok: true, student: data.student };
   }
 
@@ -683,6 +726,7 @@ class RealTimeStore {
       this._saveLocal(this.state);
     }
     await this._refreshFromServer({ silent: true });
+    this.startHeartbeat();
     return { ok: true, student: data.student };
   }
 
@@ -709,6 +753,7 @@ class RealTimeStore {
   }
 
   async logoutStudent() {
+    this.stopHeartbeat();
     const token = this.getSession()?.token;
     if (token) {
       try {
@@ -1307,6 +1352,8 @@ class RealTimeStore {
     cls.qa.push({ id: 'qa-' + Date.now(), author, regNo, text: text.trim(), time: formatTimeNow() });
     this._saveLocal(this.state);
     this._notify();
+    // Resume heartbeat if student is already logged in (page refresh)
+    if (this.getSession()?.token) this.startHeartbeat();
   }
 
   async appendLiveTranscript(classId, speaker, text) {
@@ -1335,6 +1382,8 @@ class RealTimeStore {
     this.state.chatMessages = [...(this.state.chatMessages || []), entry];
     this._saveLocal(this.state);
     this._notify();
+    // Resume heartbeat if student is already logged in (page refresh)
+    if (this.getSession()?.token) this.startHeartbeat();
   }
 
   async clearChat() {
@@ -1345,6 +1394,8 @@ class RealTimeStore {
     this.state.chatMessages = [];
     this._saveLocal(this.state);
     this._notify();
+    // Resume heartbeat if student is already logged in (page refresh)
+    if (this.getSession()?.token) this.startHeartbeat();
   }
 
   async syncCloudModels() {

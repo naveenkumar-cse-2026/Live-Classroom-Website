@@ -133,7 +133,7 @@ export function renderAuthView(container) {
 
             <div>
               <label class="block text-label-md text-[#64748B] mb-1 text-xs">Phone Number</label>
-              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
+              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" pattern="[0-9+\-\s()]{7,15}" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
             </div>
 
             <div class="grid grid-cols-2 gap-2.5">
@@ -323,6 +323,16 @@ export function renderAuthView(container) {
       year: container.querySelector('#regYear').value,
       password: container.querySelector('#regPassword').value,
     };
+
+    // Client-side validation
+    if (!payload.name) { regErrText.textContent = 'Full name is required'; regErrBox.classList.remove('hidden'); return; }
+    if (!payload.email || !payload.email.includes('@')) { regErrText.textContent = 'A valid institutional email is required'; regErrBox.classList.remove('hidden'); return; }
+    if (!payload.regNo) { regErrText.textContent = 'Register number is required'; regErrBox.classList.remove('hidden'); return; }
+    if (payload.phone) {
+      const digits = payload.phone.replace(/[^0-9]/g, '');
+      if (digits.length < 7 || digits.length > 15) { regErrText.textContent = 'Phone number must be 7-15 digits'; regErrBox.classList.remove('hidden'); return; }
+    }
+    if (!payload.password || payload.password.length < 6) { regErrText.textContent = 'Password must be at least 6 characters'; regErrBox.classList.remove('hidden'); return; }
 
     regInFlight = true;
     regBtn.disabled = true;

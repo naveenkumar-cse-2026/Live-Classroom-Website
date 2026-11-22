@@ -729,6 +729,16 @@ export function renderAdminDashboard(container) {
               </div>
             `}
           </section>
+
+          <!-- Online Students Widget (live presence) -->
+          <section id="onlineStudentsWidget" class="p-5 rounded-xl bg-white/75 border border-[#4A90E2]/10">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+              <h3 class="font-headline text-title-md text-[#172B4D]">Currently Online</h3>
+              <span id="onlineCountBadge" class="ml-auto font-code text-[11px] text-[#64748B]/60">Loading…</span>
+            </div>
+            <div id="onlineStudentsList" class="text-xs text-[#64748B]/60 font-code">Fetching presence data…</div>
+          </section>
         </main>
       </div>
     </div>
@@ -787,6 +797,30 @@ export function renderAdminDashboard(container) {
         </div>
       </div>
     `);
+  });
+
+  // Fetch and render online student presence (non-blocking)
+  store.getOnlineStudents().then((online) => {
+    const widgetEl = container.querySelector('#onlineStudentsWidget');
+    const countEl = container.querySelector('#onlineCountBadge');
+    const listEl = container.querySelector('#onlineStudentsList');
+    if (!widgetEl) return;
+    if (countEl) countEl.textContent = `${online.length} online`;
+    if (listEl) {
+      if (online.length === 0) {
+        listEl.innerHTML = '<span class="text-[#64748B]/50">No students currently online.</span>';
+      } else {
+        listEl.innerHTML = online.map((s) => `
+          <span class="inline-flex items-center gap-1.5 mr-3 mb-1.5">
+            <span class="w-2 h-2 rounded-full bg-success inline-block"></span>
+            <span class="text-[#172B4D] font-medium">${esc(s.name || s.studentId)}</span>
+          </span>
+        `).join('');
+      }
+    }
+  }).catch(() => {
+    const listEl = container.querySelector('#onlineStudentsList');
+    if (listEl) listEl.textContent = 'Presence data unavailable.';
   });
 }
 

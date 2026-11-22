@@ -1,4 +1,4 @@
-﻿import { store } from './store.js';
+import { store } from './store.js';
 import { esc, showToast } from './ui.js';
 import { renderAuthView, renderAdminLoginView } from './views-auth.js';
 import {
@@ -115,8 +115,8 @@ store.subscribe((_state, remoteNote) => {
   const modalOpen = document.getElementById('modal-host')?.innerHTML.trim().length > 0;
 
   renderGlobalAlert();
-  if (remoteNote) {
-    showToast(`Live Sync: ${remoteNote}`, 'purple');
+  if (remoteNote && String(remoteNote).trim()) {
+    showToast(`Live Update: ${remoteNote}`, 'blue');
   }
 
   if (!modalOpen && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA' && activeTag !== 'SELECT') {

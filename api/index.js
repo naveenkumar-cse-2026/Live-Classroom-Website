@@ -1,20 +1,130 @@
 /**
- * LIVE AI CLASSROOM PRO - Vercel Serverless Backend API
+ * ENORA LIVE AI CLASSROOM PRO - Vercel Serverless Backend API
  *
  * Platform: Vercel Serverless Functions (Node.js runtime)
  * Architecture: (req, res) standard Node.js HTTP handler
  * Security: PBKDF2-HMAC-SHA256 (100,000 iterations, 16-byte salt, constant-time verification)
- * Storage: Multi-tier persistence:
- *   1. Cloud Key-Value / Database (Upstash Redis / Vercel KV / Supabase REST via env vars)
- *   2. /tmp writable filesystem cache
- *   3. Bundled seed files (data/db.json and data/auth.json)
- *   4. Warm memory cache
+ * Storage: Multi-tier persistence (priority order):
+ *   1. Supabase PostgreSQL (SUPABASE_URL + SUPABASE_SERVICE_KEY) — preferred cloud DB
+ *   2. Upstash Redis / Vercel KV (UPSTASH_REDIS_REST_URL + TOKEN) — fallback KV store
+ *   3. /tmp writable filesystem cache — local fallback
+ *   4. Bundled seed files (data/db.json and data/auth.json) — read-only seed
+ *   5. Warm memory cache — in-process cache
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+
+// =========================================================================
+// SUPABASE CLIENT (backend-only, service role key — never sent to client)
+// =========================================================================
+let _supabase = null;
+function getSupabase() {
+  if (_supabase) return _supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+  if (!url || !key) return null;
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    _supabase = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { 'x-application-name': 'live-ai-classroom-backend' } }
+    });
+    return _supabase;
+  } catch (e) {
+    console.warn('[Supabase] Failed to initialize client:', e?.message);
+    return null;
+  }
+}
+
+async function supabaseGet(table, id = 'singleton') {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb.from(table).select('data').eq('id', id).single();
+    if (error) {
+      if (error.code === 'PGRST116') return null; // row not found
+      console.warn(`[Supabase] GET ${table} error:`, error.message);
+      return null;
+    }
+    return data?.data || null;
+  } catch (e) {
+    console.warn(`[Supabase] GET ${table} exception:`, e?.message);
+    return null;
+  }
+}
+
+async function supabaseSet(table, payload, id = 'singleton') {
+  const sb = getSupabase();
+  if (!sb) return false;
+  try {
+    const { error } = await sb.from(table).upsert(
+      { id, data: payload, updated_at: new Date().toISOString() },
+      { onConflict: 'id' }
+    );
+    if (error) {
+      console.warn(`[Supabase] SET ${table} error:`, error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn(`[Supabase] SET ${table} exception:`, e?.message);
+    return false;
+  }
+}
+
+// Session management via Supabase (optional — falls back to in-memory)
+async function supabaseGetSession(token) {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb
+      .from('app_sessions')
+      .select('*')
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+    if (error || !data) return null;
+    return {
+      token: data.token,
+      role: data.role,
+      userId: data.user_id,
+      name: data.user_name,
+      createdAt: data.created_at,
+      expiresAt: data.expires_at
+    };
+  } catch { return null; }
+}
+
+async function supabaseCreateSession(role, userId, name) {
+  const sb = getSupabase();
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  if (sb) {
+    try {
+      await sb.from('app_sessions').insert({
+        token, role, user_id: userId, user_name: name, expires_at: expiresAt
+      });
+    } catch (e) {
+      console.warn('[Supabase] createSession error:', e?.message);
+    }
+  }
+  return { token, role, userId, name, createdAt: new Date().toISOString(), expiresAt };
+}
+
+async function supabaseRemoveSession(token) {
+  const sb = getSupabase();
+  if (!sb) return;
+  try { await sb.from('app_sessions').delete().eq('token', token); } catch {}
+}
+
+async function supabaseCleanupSessions() {
+  const sb = getSupabase();
+  if (!sb) return;
+  try { await sb.from('app_sessions').delete().lt('expires_at', new Date().toISOString()); } catch {}
+}
 
 // =========================================================================
 // CRYPTOGRAPHY: PBKDF2-HMAC-SHA256 (100,000 iterations, 16-byte salt)
@@ -65,6 +175,9 @@ let cachedDb = null;
 let cachedAuth = null;
 let cachedSessions = {};
 let sessionsLoaded = false;
+// In-memory heartbeat store: { [studentId]: { name, sessionId, lastSeen: timestamp } }
+// This resets on cold-start but is acceptable for a soft "online presence" indicator
+let cachedHeartbeats = {};
 
 function locateFile(filename) {
   const tmpDir = os.tmpdir ? os.tmpdir() : '/tmp';
@@ -283,22 +396,34 @@ async function cloudSet(key, value) {
 async function loadDb() {
   if (cachedDb) return cachedDb;
 
-  // Try cloud storage first
-  const fromCloud = await cloudGet('live_classroom_db');
-  if (fromCloud && typeof fromCloud === 'object') {
-    cachedDb = fromCloud;
+  // TIER 1: Supabase PostgreSQL (preferred — persistent across all Vercel regions)
+  const fromSupabase = await supabaseGet('app_state');
+  if (fromSupabase && typeof fromSupabase === 'object' && fromSupabase.revision) {
+    cachedDb = fromSupabase;
+    console.log('[Storage] Loaded db from Supabase (revision', fromSupabase.revision, ')');
     return cachedDb;
   }
 
-  // Try local files (/tmp or bundled data/db.json)
+  // TIER 2: Upstash Redis / Vercel KV
+  const fromCloud = await cloudGet('live_classroom_db');
+  if (fromCloud && typeof fromCloud === 'object') {
+    cachedDb = fromCloud;
+    console.log('[Storage] Loaded db from Upstash/KV');
+    return cachedDb;
+  }
+
+  // TIER 3: Local files (/tmp or bundled data/db.json)
   const filePath = locateFile('db.json');
   if (filePath) {
     try {
       cachedDb = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      console.log('[Storage] Loaded db from local file:', filePath);
       return cachedDb;
     } catch { }
   }
 
+  // TIER 4: Default seed
+  console.log('[Storage] Using default initial db seed');
   cachedDb = getInitialDb();
   return cachedDb;
 }
@@ -306,45 +431,56 @@ async function loadDb() {
 async function loadAuth() {
   if (cachedAuth) return cachedAuth;
 
-  // Try cloud storage first
+  // TIER 1: Supabase PostgreSQL
+  const fromSupabase = await supabaseGet('app_auth');
+  if (fromSupabase && typeof fromSupabase === 'object' && (fromSupabase.admin || fromSupabase.studentCredentials)) {
+    cachedAuth = fromSupabase;
+    if (!cachedAuth.studentCredentials) cachedAuth.studentCredentials = {};
+    console.log('[Storage] Loaded auth from Supabase');
+    return cachedAuth;
+  }
+
+  // TIER 2: Upstash Redis / Vercel KV
   const fromCloud = await cloudGet('live_classroom_auth');
   if (fromCloud && typeof fromCloud === 'object') {
     cachedAuth = fromCloud;
     if (!cachedAuth.studentCredentials) cachedAuth.studentCredentials = {};
+    console.log('[Storage] Loaded auth from Upstash/KV');
     return cachedAuth;
   }
 
-  // Try local files (/tmp or bundled data/auth.json)
+  // TIER 3: Local files (/tmp or bundled data/auth.json)
   const filePath = locateFile('auth.json');
   if (filePath) {
     try {
       cachedAuth = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       if (!cachedAuth.studentCredentials) cachedAuth.studentCredentials = {};
+      console.log('[Storage] Loaded auth from local file:', filePath);
       return cachedAuth;
     } catch { }
   }
 
+  // TIER 4: Default seed
   cachedAuth = getInitialAuth();
   return cachedAuth;
 }
 
 async function saveDb(db) {
   cachedDb = db;
-  // Cloud sync
-  cloudSet('live_classroom_db', db).catch(() => { });
-  // Local filesystem persistence (/tmp and data/db.json)
-  saveLocalFile('db.json', db);
+  // Write to ALL available backends (fire-and-forget for secondary tiers)
+  supabaseSet('app_state', db).catch(() => {});     // TIER 1: Supabase
+  cloudSet('live_classroom_db', db).catch(() => {}); // TIER 2: Upstash/KV
+  saveLocalFile('db.json', db);                      // TIER 3: Local filesystem
 }
 
 async function saveAuth(auth) {
   cachedAuth = auth;
-  // Cloud sync
-  cloudSet('live_classroom_auth', auth).catch(() => { });
-  // Local filesystem persistence (/tmp and data/auth.json)
-  saveLocalFile('auth.json', auth);
+  supabaseSet('app_auth', auth).catch(() => {});         // TIER 1: Supabase
+  cloudSet('live_classroom_auth', auth).catch(() => {}); // TIER 2: Upstash/KV
+  saveLocalFile('auth.json', auth);                       // TIER 3: Local filesystem
 }
 
-// Session Management
+// Session Management — hybrid: in-memory (fast) + Supabase (persistent across cold starts)
 function getSession(token) {
   if (!token) return null;
   loadSessions();
@@ -371,6 +507,8 @@ function createSession(role, userId, name) {
   };
   cachedSessions[token] = session;
   saveSessions();
+  // Also persist session to Supabase (fire-and-forget)
+  supabaseCreateSession(role, userId, name).catch(() => {});
   return session;
 }
 
@@ -379,6 +517,8 @@ function removeSession(token) {
     delete cachedSessions[token];
     saveSessions();
   }
+  // Also remove from Supabase (fire-and-forget)
+  supabaseRemoveSession(token).catch(() => {});
 }
 
 function sanitizeDbForClient(db) {
@@ -527,12 +667,47 @@ module.exports = async function handler(req, res) {
 
     // 1. Health
     if (reqPath === '/api/health') {
+      const sbConfigured = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY));
       return sendJson(res, 200, {
         ok: true,
         authEnabled: true,
-        serverVersion: '2.0-vercel',
+        serverVersion: '3.0-supabase',
         revision: db.revision || 1,
-        serverTime: new Date().toISOString()
+        serverTime: new Date().toISOString(),
+        storage: {
+          supabase: sbConfigured ? 'configured' : 'not-configured',
+          supabaseServiceKey: !!process.env.SUPABASE_SERVICE_KEY,
+          upstash: !!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)
+        }
+      });
+    }
+
+    // 1b. Supabase Status — GET /api/supabase/status (admin only)
+    if (reqPath === '/api/supabase/status') {
+      if (method !== 'GET') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      if (!session || session.role !== 'admin') return sendJson(res, 403, { ok: false, error: 'Admin only' });
+      const sb = getSupabase();
+      let connected = false;
+      let error = null;
+      let storageMode = 'local-files';
+      if (sb) {
+        try {
+          const { data, error: sbErr } = await sb.from('app_state').select('id, revision').eq('id', 'singleton').single();
+          if (sbErr) { error = sbErr.message; }
+          else { connected = true; storageMode = 'supabase-postgresql'; }
+        } catch (e) { error = e?.message; }
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        supabase: {
+          connected,
+          error,
+          url: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.replace(/\/\/.*@/, '//<credentials>@') : null,
+          serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_KEY,
+          anonKeyConfigured: !!process.env.SUPABASE_KEY
+        },
+        storageMode,
+        dbRevision: db.revision || 1
       });
     }
 
@@ -869,7 +1044,46 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 200, { ok: true, revision: body.revision, updatedAt: body.updatedAt });
     }
 
-    // 12. Student Action
+    // 12. Heartbeat — POST /api/heartbeat (student sends every 30s to signal presence)
+    if (reqPath === '/api/heartbeat') {
+      if (method !== 'POST') {
+        return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      }
+      if (!session) {
+        return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      }
+      const studentId = session.role === 'student' ? session.userId : null;
+      if (!studentId) {
+        return sendJson(res, 400, { ok: false, error: 'Heartbeat is for students only' });
+      }
+      const now = Date.now();
+      // Purge stale heartbeats older than 90 seconds
+      for (const sid of Object.keys(cachedHeartbeats)) {
+        if (now - cachedHeartbeats[sid].lastSeen > 90000) delete cachedHeartbeats[sid];
+      }
+      cachedHeartbeats[studentId] = { name: session.name, lastSeen: now };
+      return sendJson(res, 200, { ok: true, studentId, lastSeen: new Date(now).toISOString() });
+    }
+
+    // 12b. Online Students — GET /api/online-students (returns who is online in last 90s)
+    if (reqPath === '/api/online-students') {
+      if (method !== 'GET') {
+        return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      }
+      const now = Date.now();
+      const online = [];
+      for (const sid of Object.keys(cachedHeartbeats)) {
+        const hb = cachedHeartbeats[sid];
+        if (now - hb.lastSeen <= 90000) {
+          online.push({ studentId: sid, name: hb.name, lastSeen: new Date(hb.lastSeen).toISOString() });
+        } else {
+          delete cachedHeartbeats[sid];
+        }
+      }
+      return sendJson(res, 200, { ok: true, online, count: online.length, serverTime: new Date().toISOString() });
+    }
+
+    // 13. Student Action
     if (reqPath === '/api/student/action') {
       if (method !== 'POST') {
         return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
