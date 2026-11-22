@@ -21,17 +21,29 @@ const crypto = require('crypto');
 // SUPABASE CLIENT (backend-only, service role key — never sent to client)
 // =========================================================================
 let _supabase = null;
+let _supabaseKeyType = null;
 function getSupabase() {
   if (_supabase) return _supabase;
   const url = process.env.SUPABASE_URL;
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_KEY;
   const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
-  if (!url || !key) return null;
+  if (!url || !key) {
+    console.warn('[Supabase] SUPABASE_URL or key not set — Supabase disabled, falling back to /tmp storage.');
+    return null;
+  }
+  _supabaseKeyType = hasServiceKey ? 'service_role' : 'anon_INSECURE';
+  if (!hasServiceKey) {
+    console.warn('[Supabase] WARNING: SUPABASE_SERVICE_KEY not set. Using anon key — backend DB operations will be DENIED by RLS. Set SUPABASE_SERVICE_KEY in Vercel Environment Variables.');
+  } else {
+    console.log('[Supabase] Initializing with service_role key ✓');
+  }
   try {
     const { createClient } = require('@supabase/supabase-js');
     _supabase = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { 'x-application-name': 'live-ai-classroom-backend' } }
     });
+    console.log(`[Supabase] Client initialized (key type: ${_supabaseKeyType})`);
     return _supabase;
   } catch (e) {
     console.warn('[Supabase] Failed to initialize client:', e?.message);
@@ -98,9 +110,9 @@ async function supabaseGetSession(token) {
   } catch { return null; }
 }
 
-async function supabaseCreateSession(role, userId, name) {
+async function supabaseCreateSession(role, userId, name, token) {
   const sb = getSupabase();
-  const token = generateToken();
+  if (!token) token = generateToken(); // fallback if not provided
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   if (sb) {
     try {
@@ -507,8 +519,8 @@ function createSession(role, userId, name) {
   };
   cachedSessions[token] = session;
   saveSessions();
-  // Also persist session to Supabase (fire-and-forget)
-  supabaseCreateSession(role, userId, name).catch(() => {});
+  // Also persist session to Supabase (fire-and-forget) — pass same token to avoid mismatch
+  supabaseCreateSession(role, userId, name, token).catch(() => {});
   return session;
 }
 
@@ -704,7 +716,8 @@ module.exports = async function handler(req, res) {
           error,
           url: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.replace(/\/\/.*@/, '//<credentials>@') : null,
           serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_KEY,
-          anonKeyConfigured: !!process.env.SUPABASE_KEY
+          anonKeyConfigured: !!process.env.SUPABASE_KEY,
+          activeKeyType: _supabaseKeyType || (sb ? 'unknown' : 'none')
         },
         storageMode,
         dbRevision: db.revision || 1

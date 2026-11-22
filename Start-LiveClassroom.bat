@@ -6,3 +6,4 @@ echo Starting Live AI Classroom PRO on http://localhost:8080 ...
 start "" /b powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Milliseconds 1200; Start-Process 'http://localhost:8080/'"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0server.ps1" -Port 8080
 pause
+

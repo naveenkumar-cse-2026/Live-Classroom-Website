@@ -1,4 +1,4 @@
-﻿import { store } from './store.js';
+import { store } from './store.js';
 import { esc, showToast, renderSyncPill } from './ui.js';
 
 function bindPasswordToggle(btn, input) {
