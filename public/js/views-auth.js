@@ -1,4 +1,4 @@
-import { store } from './store.js';
+﻿import { store } from './store.js';
 import { esc, showToast, renderSyncPill } from './ui.js';
 
 function bindPasswordToggle(btn, input) {
@@ -27,8 +27,8 @@ export function renderAuthView(container) {
       <!-- Top Brand Header -->
       <header class="pt-6 pb-2 text-center space-y-3">
         <div class="flex justify-center mb-1">${renderSyncPill()}</div>
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-neon-purple to-deep-violet p-[1.5px] shadow-[0_0_30px_rgba(168,85,247,0.5)] mx-auto">
-          <div class="w-full h-full rounded-2xl bg-[#0D0819] flex items-center justify-center overflow-hidden">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] p-[1.5px] shadow-[0_0_30px_rgba(74,144,226,0.4)] mx-auto">
+          <div class="w-full h-full rounded-2xl bg-white flex items-center justify-center overflow-hidden">
             ${settings.logoDataUrl
               ? `<img src="${esc(settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Crest" />`
               : `<span class="material-symbols-outlined text-[34px] text-neon-purple animate-pulse">psychology</span>`}
@@ -36,16 +36,16 @@ export function renderAuthView(container) {
         </div>
 
         <div>
-          <h1 class="font-headline text-headline-lg-mobile text-white tracking-wide">${esc(settings.shortName || 'Live AI Classroom')}</h1>
-          <p class="text-body-sm text-cyber-lavender/70 text-xs mt-1">${esc(settings.collegeName || 'Academic Learning Portal')}</p>
+          <h1 class="font-headline text-headline-lg-mobile text-[#172B4D] tracking-wide">${esc(settings.shortName || 'Live AI Classroom')}</h1>
+          <p class="text-body-sm text-[#64748B]/70 text-xs mt-1">${esc(settings.collegeName || 'Academic Learning Portal')}</p>
         </div>
 
         <!-- Segmented Tab -->
-        <div class="p-1 rounded-xl bg-[#120C1F] border border-glass-border flex max-w-xs mx-auto mt-4">
-          <button id="loginTabBtn" type="button" class="flex-1 py-2 rounded-lg bg-neon-purple text-white text-xs font-label shadow-[0_0_12px_rgba(168,85,247,0.4)] transition-all">
+        <div class="p-1 rounded-xl bg-[#E6F4FF] border border-[#4A90E2]/20 flex max-w-xs mx-auto mt-4">
+          <button id="loginTabBtn" type="button" class="flex-1 py-2 rounded-lg bg-[#4A90E2] text-white text-xs font-label shadow-[0_0_12px_rgba(74,144,226,0.2)] transition-all">
             Student Sign In
           </button>
-          <button id="registerTabBtn" type="button" class="flex-1 py-2 rounded-lg text-cyber-lavender hover:text-white text-xs font-label transition-all">
+          <button id="registerTabBtn" type="button" class="flex-1 py-2 rounded-lg text-[#64748B] hover:text-[#172B4D] text-xs font-label transition-all">
             New Registration
           </button>
         </div>
@@ -54,11 +54,11 @@ export function renderAuthView(container) {
       <!-- Main Form Container -->
       <main class="my-auto py-4">
         <!-- STUDENT LOGIN PANEL -->
-        <div id="loginPanel" class="p-6 rounded-2xl bg-[#110C1E]/90 border border-neon-purple/35 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 animate-enter">
+        <div id="loginPanel" class="p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
           <div class="border-b border-glass-border pb-3 flex items-center justify-between">
             <div>
-              <h2 class="font-headline text-title-lg text-white">Student Access</h2>
-              <p class="text-body-sm text-cyber-lavender/65 text-xs">Sign in with your registered credentials</p>
+              <h2 class="font-headline text-title-lg text-[#172B4D]">Student Access</h2>
+              <p class="text-body-sm text-[#64748B]/65 text-xs">Sign in with your registered credentials</p>
             </div>
             <span class="material-symbols-outlined text-neon-purple text-[22px]">lock</span>
           </div>
@@ -70,35 +70,35 @@ export function renderAuthView(container) {
 
           <form id="studentLoginForm" novalidate class="space-y-4">
             <div>
-              <label for="loginIdentifier" class="block text-label-md text-cyber-lavender mb-1.5">Register No., Email, or Full Name</label>
+              <label for="loginIdentifier" class="block text-label-md text-[#64748B] mb-1.5">Register No., Email, or Full Name</label>
               <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-cyber-lavender/60 text-[18px] pointer-events-none">badge</span>
-                <input id="loginIdentifier" type="text" autocomplete="username" placeholder="Enter register no., email, or name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0A0614] border border-glass-border text-white text-sm font-code placeholder-white/25 focus:border-neon-purple focus:ring-1 focus:ring-neon-purple outline-none transition-all" />
+                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">badge</span>
+                <input id="loginIdentifier" type="text" autocomplete="username" placeholder="Enter register no., email, or name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
               </div>
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label for="loginPassword" class="block text-label-md text-cyber-lavender">Password</label>
+                <label for="loginPassword" class="block text-label-md text-[#64748B]">Password</label>
                 <button id="forgotPwdBtn" type="button" class="text-xs font-code text-neon-purple hover:underline">Forgot?</button>
               </div>
               <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-cyber-lavender/60 text-[18px] pointer-events-none">key</span>
-                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-[#0A0614] border border-glass-border text-white text-sm font-code placeholder-white/25 focus:border-neon-purple focus:ring-1 focus:ring-neon-purple outline-none transition-all" />
-                <button id="togglePwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-cyber-lavender/70 hover:text-white hover:bg-white/5 active:scale-95 transition-all touch-manipulation">
+                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">key</span>
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
+                <button id="togglePwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D] hover:bg-[#F0F8FF] active:scale-95 transition-all touch-manipulation">
                   <span class="material-symbols-outlined text-[20px]">visibility</span>
                 </button>
               </div>
             </div>
 
-            <button id="studentLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-neon-purple to-deep-violet text-white font-label text-sm shadow-[0_0_24px_rgba(168,85,247,0.45)] hover:shadow-[0_0_32px_rgba(168,85,247,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-neon-purple/50 disabled:opacity-60 disabled:cursor-not-allowed">
+            <button id="studentLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-sm shadow-[0_0_24px_rgba(74,144,226,0.45)] hover:shadow-[0_0_32px_rgba(74,144,226,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-[#4A90E2]/50 disabled:opacity-60 disabled:cursor-not-allowed">
               <span id="studentLoginBtnIcon" class="material-symbols-outlined text-[18px]">login</span>
               <span id="studentLoginBtnText">Sign In to Student Portal</span>
             </button>
           </form>
 
           <div class="pt-3 border-t border-glass-border text-center">
-            <a href="#admin/login" class="inline-flex items-center gap-1.5 text-xs font-label text-cyber-lavender/80 hover:text-neon-purple transition-colors">
+            <a href="#admin/login" class="inline-flex items-center gap-1.5 text-xs font-label text-[#64748B]/80 hover:text-neon-purple transition-colors">
               <span class="material-symbols-outlined text-[15px] text-neon-purple">admin_panel_settings</span>
               <span>Administrator Login →</span>
             </a>
@@ -106,11 +106,11 @@ export function renderAuthView(container) {
         </div>
 
         <!-- STUDENT REGISTER PANEL -->
-        <div id="registerPanel" class="hidden p-6 rounded-2xl bg-[#110C1E]/90 border border-neon-purple/35 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 animate-enter">
+        <div id="registerPanel" class="hidden p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
           <div class="border-b border-glass-border pb-3 flex items-center justify-between">
             <div>
-              <h2 class="font-headline text-title-lg text-white">Student Registration</h2>
-              <p class="text-body-sm text-cyber-lavender/65 text-xs">Create your student account</p>
+              <h2 class="font-headline text-title-lg text-[#172B4D]">Student Registration</h2>
+              <p class="text-body-sm text-[#64748B]/65 text-xs">Create your student account</p>
             </div>
             <span class="material-symbols-outlined text-neon-purple text-[22px]">how_to_reg</span>
           </div>
@@ -122,46 +122,46 @@ export function renderAuthView(container) {
 
           <form id="studentRegisterForm" class="space-y-3.5">
             <div>
-              <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Full Name</label>
-              <input id="regName" type="text" required placeholder="Enter full name" class="w-full px-3.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs placeholder-white/25 focus:border-neon-purple outline-none" />
+              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Full Name</label>
+              <input id="regName" type="text" required placeholder="Enter full name" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
             </div>
 
             <div>
-              <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Institutional Email</label>
-              <input id="regEmail" type="email" required placeholder="student@${esc(domain)}" class="w-full px-3.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs placeholder-white/25 focus:border-neon-purple outline-none" />
+              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Institutional Email</label>
+              <input id="regEmail" type="email" required placeholder="student@${esc(domain)}" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
             </div>
 
             <div>
-              <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Phone Number</label>
-              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" class="w-full px-3.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs placeholder-white/25 focus:border-neon-purple outline-none" />
+              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Phone Number</label>
+              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
             </div>
 
             <div class="grid grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Register Number</label>
-                <input id="regNo" type="text" required placeholder="Enter register no." class="w-full px-3 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs font-code placeholder-white/25 focus:border-neon-purple outline-none" />
+                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Register Number</label>
+                <input id="regNo" type="text" required placeholder="Enter register no." class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
               </div>
               <div>
-                <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Section</label>
-                <input id="regSection" type="text" value="Sec A" placeholder="e.g. Sec A" class="w-full px-3 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs focus:border-neon-purple outline-none" />
+                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Section</label>
+                <input id="regSection" type="text" value="Sec A" placeholder="e.g. Sec A" class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none" />
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Department</label>
+                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Department</label>
                 ${departments.length > 0 ? `
-                  <select id="regDept" required class="w-full px-2.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs focus:border-neon-purple outline-none">
+                  <select id="regDept" required class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
                     <option value="">Select department</option>
                     ${departments.map((d) => `<option value="${esc(d.shortName || d.name)}">${esc(d.shortName || d.name)}</option>`).join('')}
                   </select>
                 ` : `
-                  <input id="regDept" type="text" required placeholder="Enter department" class="w-full px-3 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs focus:border-neon-purple outline-none" />
+                  <input id="regDept" type="text" required placeholder="Enter department" class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none" />
                 `}
               </div>
               <div>
-                <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Year</label>
-                <select id="regYear" class="w-full px-2.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs focus:border-neon-purple outline-none">
+                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Year</label>
+                <select id="regYear" class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
                   <option>Year 1</option>
                   <option>Year 2</option>
                   <option>Year 3</option>
@@ -172,8 +172,8 @@ export function renderAuthView(container) {
 
             ${programs.length > 0 ? `
               <div>
-                <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Academic Program</label>
-                <select id="regProgram" class="w-full px-2.5 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs focus:border-neon-purple outline-none">
+                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Academic Program</label>
+                <select id="regProgram" class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
                   <option value="">Select program</option>
                   ${programs.map((p) => `<option value="${esc(p.code ? `${p.code} — ${p.name}` : p.name)}">${esc(p.code ? `${p.code} — ${p.name}` : p.name)}</option>`).join('')}
                 </select>
@@ -181,16 +181,16 @@ export function renderAuthView(container) {
             ` : ''}
 
             <div>
-              <label class="block text-label-md text-cyber-lavender mb-1 text-xs">Create Password</label>
+              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Create Password</label>
               <div class="relative flex items-center">
-                <input id="regPassword" type="password" required minlength="6" placeholder="Minimum 6 characters" class="w-full pl-3.5 pr-11 py-2 rounded-lg bg-[#0A0614] border border-glass-border text-white text-xs font-code placeholder-white/25 focus:border-neon-purple outline-none" />
-                <button id="toggleRegPwdBtn" type="button" aria-label="Show password" class="absolute right-1.5 w-8 h-8 rounded flex items-center justify-center text-cyber-lavender/70 hover:text-white">
+                <input id="regPassword" type="password" required minlength="6" placeholder="Minimum 6 characters" class="w-full pl-3.5 pr-11 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
+                <button id="toggleRegPwdBtn" type="button" aria-label="Show password" class="absolute right-1.5 w-8 h-8 rounded flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D]">
                   <span class="material-symbols-outlined text-[18px]">visibility</span>
                 </button>
               </div>
             </div>
 
-            <button id="studentRegSubmitBtn" type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-neon-purple to-deep-violet text-white font-label text-xs shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center gap-1.5 border border-neon-purple/50 mt-2 active:scale-[0.98] transition-transform disabled:opacity-60">
+            <button id="studentRegSubmitBtn" type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-xs shadow-[0_0_20px_rgba(74,144,226,0.2)] flex items-center justify-center gap-1.5 border border-[#4A90E2]/50 mt-2 active:scale-[0.98] transition-transform disabled:opacity-60">
               <span class="material-symbols-outlined text-[16px]">verified_user</span>
               <span id="studentRegBtnText">Register &amp; Sign In</span>
             </button>
@@ -199,11 +199,11 @@ export function renderAuthView(container) {
       </main>
 
       <footer class="text-center pt-2 pb-4 space-y-1">
-        <p class="font-code text-[11px] text-cyber-lavender/50 flex items-center justify-center gap-1">
+        <p class="font-code text-[11px] text-[#64748B]/50 flex items-center justify-center gap-1">
           <span class="material-symbols-outlined text-[14px] text-neon-purple">shield</span>
           PBKDF2-SHA256 Secured University Authentication
         </p>
-        <p class="text-[10px] text-white/30">${esc(settings.collegeName || 'Live AI Classroom')} • ${esc(settings.aiEngineVersion)}</p>
+        <p class="text-[10px] text-[#172B4D]/30">${esc(settings.collegeName || 'Live AI Classroom')} • ${esc(settings.aiEngineVersion)}</p>
       </footer>
     </div>
   `;
@@ -217,17 +217,17 @@ export function renderAuthView(container) {
     if (tab === 'login') {
       loginPanel.classList.remove('hidden');
       registerPanel.classList.add('hidden');
-      loginTabBtn.classList.add('bg-neon-purple', 'text-white', 'shadow-[0_0_12px_rgba(168,85,247,0.4)]');
-      loginTabBtn.classList.remove('text-cyber-lavender');
-      registerTabBtn.classList.remove('bg-neon-purple', 'text-white', 'shadow-[0_0_12px_rgba(168,85,247,0.4)]');
-      registerTabBtn.classList.add('text-cyber-lavender');
+      loginTabBtn.classList.add('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
+      loginTabBtn.classList.remove('text-[#64748B]');
+      registerTabBtn.classList.remove('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
+      registerTabBtn.classList.add('text-[#64748B]');
     } else {
       loginPanel.classList.add('hidden');
       registerPanel.classList.remove('hidden');
-      registerTabBtn.classList.add('bg-neon-purple', 'text-white', 'shadow-[0_0_12px_rgba(168,85,247,0.4)]');
-      registerTabBtn.classList.remove('text-cyber-lavender');
-      loginTabBtn.classList.remove('bg-neon-purple', 'text-white', 'shadow-[0_0_12px_rgba(168,85,247,0.4)]');
-      loginTabBtn.classList.add('text-cyber-lavender');
+      registerTabBtn.classList.add('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
+      registerTabBtn.classList.remove('text-[#64748B]');
+      loginTabBtn.classList.remove('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
+      loginTabBtn.classList.add('text-[#64748B]');
     }
   }
 
@@ -364,23 +364,23 @@ export function renderAdminLoginView(container) {
     <div class="student-shell student-shell-frame flex flex-col justify-between p-5 min-h-screen">
       <header class="pt-8 pb-2 text-center space-y-3">
         <div class="flex justify-center mb-1">${renderSyncPill()}</div>
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-neon-purple to-deep-violet p-[1.5px] shadow-[0_0_30px_rgba(168,85,247,0.5)] mx-auto">
-          <div class="w-full h-full rounded-2xl bg-[#0D0819] flex items-center justify-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] p-[1.5px] shadow-[0_0_30px_rgba(74,144,226,0.4)] mx-auto">
+          <div class="w-full h-full rounded-2xl bg-white flex items-center justify-center">
             <span class="material-symbols-outlined text-[34px] text-neon-purple">admin_panel_settings</span>
           </div>
         </div>
         <div>
-          <h1 class="font-headline text-headline-lg-mobile text-white tracking-wide">Administrator Console</h1>
-          <p class="text-body-sm text-cyber-lavender/70 text-xs mt-1">${esc(settings.collegeName || 'Live AI Classroom PRO')}</p>
+          <h1 class="font-headline text-headline-lg-mobile text-[#172B4D] tracking-wide">Administrator Console</h1>
+          <p class="text-body-sm text-[#64748B]/70 text-xs mt-1">${esc(settings.collegeName || 'Live AI Classroom PRO')}</p>
         </div>
       </header>
 
       <main class="my-auto py-4">
-        <div class="p-6 rounded-2xl bg-[#110C1E]/95 border border-neon-purple/40 backdrop-blur-xl shadow-[0_8px_36px_rgba(0,0,0,0.65)] space-y-4 animate-enter">
+        <div class="p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_36px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
           <div class="border-b border-glass-border pb-3 flex items-center justify-between">
             <div>
-              <h2 class="font-headline text-title-lg text-white">Secure Admin Sign In</h2>
-              <p class="text-xs text-cyber-lavender/65">Restricted to authorized administrators only</p>
+              <h2 class="font-headline text-title-lg text-[#172B4D]">Secure Admin Sign In</h2>
+              <p class="text-xs text-[#64748B]/65">Restricted to authorized administrators only</p>
             </div>
             <span class="material-symbols-outlined text-neon-purple text-[22px]">verified_user</span>
           </div>
@@ -392,32 +392,32 @@ export function renderAdminLoginView(container) {
 
           <form id="adminLoginForm" novalidate class="space-y-4">
             <div>
-              <label for="adminNameInput" class="block text-label-md text-cyber-lavender mb-1.5">Administrator Name</label>
+              <label for="adminNameInput" class="block text-label-md text-[#64748B] mb-1.5">Administrator Name</label>
               <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-cyber-lavender/60 text-[18px] pointer-events-none">person</span>
-                <input id="adminNameInput" type="text" autocomplete="username" placeholder="Enter administrator name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#0A0614] border border-glass-border text-white text-sm placeholder-white/25 focus:border-neon-purple focus:ring-1 focus:ring-neon-purple outline-none transition-all" />
+                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">person</span>
+                <input id="adminNameInput" type="text" autocomplete="username" placeholder="Enter administrator name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-sm placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
               </div>
             </div>
 
             <div>
-              <label for="adminPwdInput" class="block text-label-md text-cyber-lavender mb-1.5">Administrator Password</label>
+              <label for="adminPwdInput" class="block text-label-md text-[#64748B] mb-1.5">Administrator Password</label>
               <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-cyber-lavender/60 text-[18px] pointer-events-none">key</span>
-                <input id="adminPwdInput" type="password" autocomplete="current-password" placeholder="Enter administrator password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-[#0A0614] border border-glass-border text-white text-sm font-code placeholder-white/25 focus:border-neon-purple focus:ring-1 focus:ring-neon-purple outline-none transition-all" />
-                <button id="toggleAdminPwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-cyber-lavender/70 hover:text-white hover:bg-white/5 active:scale-95 transition-all touch-manipulation">
+                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">key</span>
+                <input id="adminPwdInput" type="password" autocomplete="current-password" placeholder="Enter administrator password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
+                <button id="toggleAdminPwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D] hover:bg-[#F0F8FF] active:scale-95 transition-all touch-manipulation">
                   <span class="material-symbols-outlined text-[20px]">visibility</span>
                 </button>
               </div>
             </div>
 
-            <button id="adminLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-neon-purple to-deep-violet text-white font-label text-sm shadow-[0_0_24px_rgba(168,85,247,0.45)] hover:shadow-[0_0_32px_rgba(168,85,247,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-neon-purple/50 disabled:opacity-60 disabled:cursor-not-allowed">
+            <button id="adminLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-sm shadow-[0_0_24px_rgba(74,144,226,0.45)] hover:shadow-[0_0_32px_rgba(74,144,226,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-[#4A90E2]/50 disabled:opacity-60 disabled:cursor-not-allowed">
               <span id="adminLoginBtnIcon" class="material-symbols-outlined text-[18px]">shield_person</span>
               <span id="adminLoginBtnText">Sign In as Administrator</span>
             </button>
           </form>
 
           <div class="pt-3 border-t border-glass-border text-center">
-            <a href="#auth" class="inline-flex items-center gap-1.5 text-xs font-label text-cyber-lavender/80 hover:text-white transition-colors">
+            <a href="#auth" class="inline-flex items-center gap-1.5 text-xs font-label text-[#64748B]/80 hover:text-[#172B4D] transition-colors">
               <span class="material-symbols-outlined text-[15px] text-neon-purple">arrow_back</span>
               <span>Back to Student Portal Login</span>
             </a>
@@ -426,7 +426,7 @@ export function renderAdminLoginView(container) {
       </main>
 
       <footer class="text-center pt-2 pb-4 space-y-1">
-        <p class="font-code text-[11px] text-cyber-lavender/50 flex items-center justify-center gap-1">
+        <p class="font-code text-[11px] text-[#64748B]/50 flex items-center justify-center gap-1">
           <span class="material-symbols-outlined text-[14px] text-neon-purple">shield</span>
           Backend PBKDF2-SHA256 Verified Admin Access
         </p>

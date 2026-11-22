@@ -79,7 +79,7 @@ function locateFile(filename) {
   for (const c of candidates) {
     try {
       if (fs.existsSync(c)) return c;
-    } catch {}
+    } catch { }
   }
   return null;
 }
@@ -89,16 +89,16 @@ function saveLocalFile(filename, data) {
   const tmpDir = os.tmpdir ? os.tmpdir() : '/tmp';
   try {
     fs.writeFileSync(path.join(tmpDir, filename), content, 'utf8');
-  } catch {}
+  } catch { }
   try {
     if (tmpDir !== '/tmp') fs.writeFileSync(path.join('/tmp', filename), content, 'utf8');
-  } catch {}
+  } catch { }
   try {
     const localData = path.resolve(process.cwd(), 'data');
     if (fs.existsSync(localData)) {
       fs.writeFileSync(path.join(localData, filename), content, 'utf8');
     }
-  } catch {}
+  } catch { }
 }
 
 function loadSessions() {
@@ -116,7 +116,7 @@ function loadSessions() {
           }
         }
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -259,7 +259,7 @@ async function cloudGet(key) {
         return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
       }
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -296,7 +296,7 @@ async function loadDb() {
     try {
       cachedDb = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       return cachedDb;
-    } catch {}
+    } catch { }
   }
 
   cachedDb = getInitialDb();
@@ -321,7 +321,7 @@ async function loadAuth() {
       cachedAuth = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       if (!cachedAuth.studentCredentials) cachedAuth.studentCredentials = {};
       return cachedAuth;
-    } catch {}
+    } catch { }
   }
 
   cachedAuth = getInitialAuth();
@@ -331,7 +331,7 @@ async function loadAuth() {
 async function saveDb(db) {
   cachedDb = db;
   // Cloud sync
-  cloudSet('live_classroom_db', db).catch(() => {});
+  cloudSet('live_classroom_db', db).catch(() => { });
   // Local filesystem persistence (/tmp and data/db.json)
   saveLocalFile('db.json', db);
 }
@@ -339,7 +339,7 @@ async function saveDb(db) {
 async function saveAuth(auth) {
   cachedAuth = auth;
   // Cloud sync
-  cloudSet('live_classroom_auth', auth).catch(() => {});
+  cloudSet('live_classroom_auth', auth).catch(() => { });
   // Local filesystem persistence (/tmp and data/auth.json)
   saveLocalFile('auth.json', auth);
 }
@@ -480,7 +480,7 @@ function extractReqPath(req) {
     if (parsed.searchParams.has('path')) {
       return ('/api/' + parsed.searchParams.get('path')).replace(/\/+$/, '');
     }
-  } catch {}
+  } catch { }
 
   return rawUrl || '/api';
 }

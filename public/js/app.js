@@ -1,4 +1,4 @@
-import { store } from './store.js';
+﻿import { store } from './store.js';
 import { esc, showToast } from './ui.js';
 import { renderAuthView, renderAdminLoginView } from './views-auth.js';
 import {
@@ -58,17 +58,17 @@ function renderGlobalAlert() {
     return;
   }
   host.innerHTML = `
-    <div class="pointer-events-auto bg-gradient-to-r from-[#2A0913]/95 via-[#1C0818]/95 to-[#2A0913]/95 border-b border-error/60 backdrop-blur-xl px-4 py-2.5 shadow-[0_6px_30px_rgba(244,63,94,0.35)] animate-enter">
+    <div class="pointer-events-auto bg-gradient-to-r from-rose-50/95 via-rose-100/95 to-rose-50/95 border-b border-error/40 backdrop-blur-xl px-4 py-2.5 shadow-[0_6px_30px_rgba(239,68,68,0.15)] animate-enter">
       <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5 text-xs">
           <span class="w-2.5 h-2.5 rounded-full bg-error animate-ping shrink-0"></span>
           <div>
             <span class="font-code font-bold text-error uppercase tracking-wider mr-1.5">CAMPUS ALERT (${esc(alert.sentAt)}):</span>
-            <span class="font-semibold text-white">${esc(alert.title)}</span>
-            <span class="text-rose-100/80 ml-1">— ${esc(alert.message)}</span>
+            <span class="font-semibold text-[#172B4D]">${esc(alert.title)}</span>
+            <span class="text-rose-700/80 ml-1">— ${esc(alert.message)}</span>
           </div>
         </div>
-        <button id="dismissGlobalAlertBtn" type="button" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-[11px] font-code shrink-0">
+        <button id="dismissGlobalAlertBtn" type="button" class="px-2.5 py-1 rounded bg-[#E6F4FF] hover:bg-white/20 text-[#172B4D] text-[11px] font-code shrink-0">
           Dismiss
         </button>
       </div>
