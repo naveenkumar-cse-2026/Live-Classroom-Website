@@ -39,6 +39,9 @@ export function showToast(message, type = 'purple') {
     setTimeout(() => el.remove(), 200);
   }, 3400);
 }
+if (typeof window !== 'undefined') {
+  window.showToast = showToast;
+}
 
 export function openModal(html, onBind, maxWidthClass = 'max-w-2xl') {
   const host = document.getElementById('modal-host');
@@ -113,11 +116,16 @@ export function confirmDelete({ title = 'Confirm Deletion', itemName = '', detai
 
 export function renderSyncPill() {
   const rev = store.state.revision || 1;
+  const isRealtime = store.syncMode === 'supabase-realtime';
   const connected = store.serverConnected;
+  const label = isRealtime ? 'SUPABASE REALTIME' : (connected ? 'LIVE SERVER' : 'LIVE SYNC');
+  const title = isRealtime
+    ? 'Connected to Supabase PostgreSQL Real-Time Cloud'
+    : (connected ? 'Connected to Live Server' : 'Real-Time Cross-Tab Local Sync Active');
   return `
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4A90E2]/8 border border-glass-border font-code text-[10px] text-[#64748B]/80" title="${connected ? 'Connected to Real-Time Local Backend Server' : 'Real-Time Cross-Tab Local Sync Active'}">
-      <span class="w-1.5 h-1.5 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-neon-purple animate-pulse'}"></span>
-      ${connected ? 'LIVE SERVER' : 'LIVE SYNC'} • r${rev}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4A90E2]/8 border border-glass-border font-code text-[10px] text-[#64748B]/80" title="${title}">
+      <span class="w-1.5 h-1.5 rounded-full ${isRealtime ? 'bg-[#22C55E] animate-pulse shadow-[0_0_6px_#22C55E]' : (connected ? 'bg-success animate-pulse' : 'bg-neon-purple animate-pulse')}"></span>
+      ${label} • r${rev}
     </span>
   `;
 }

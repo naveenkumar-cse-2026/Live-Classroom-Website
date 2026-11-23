@@ -49,24 +49,71 @@ CREATE INDEX IF NOT EXISTS idx_app_sessions_expires_at ON public.app_sessions (e
 CREATE INDEX IF NOT EXISTS idx_app_sessions_user_id ON public.app_sessions (user_id);
 
 -- ============================================================
--- ROW LEVEL SECURITY
--- All tables are backend-only (accessed via service_role key).
--- Disable RLS so the backend can read/write without policies.
--- Frontend NEVER accesses Supabase directly.
+-- ROW LEVEL SECURITY & PERMISSIONS
+-- app_state: Readable by public/anon for Supabase Realtime subscriptions.
+--            Writable ONLY by service_role (backend API).
+-- app_auth & app_sessions: Strictly service_role only (never exposed).
 -- ============================================================
-ALTER TABLE public.app_state DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.app_auth DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.app_sessions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_auth ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_sessions ENABLE ROW LEVEL SECURITY;
 
--- Grant full access to service_role (backend)
+-- Grant permissions
+GRANT SELECT ON public.app_state TO anon, authenticated;
 GRANT ALL ON public.app_state TO service_role;
-GRANT ALL ON public.app_auth TO service_role;
-GRANT ALL ON public.app_sessions TO service_role;
 
--- Revoke all access from anon role (no direct frontend access)
-REVOKE ALL ON public.app_state FROM anon;
-REVOKE ALL ON public.app_auth FROM anon;
-REVOKE ALL ON public.app_sessions FROM anon;
+GRANT ALL ON public.app_auth TO service_role;
+REVOKE ALL ON public.app_auth FROM anon, authenticated;
+
+GRANT ALL ON public.app_sessions TO service_role;
+REVOKE ALL ON public.app_sessions FROM anon, authenticated;
+
+-- Policies for app_state
+DROP POLICY IF EXISTS "Allow public read app_state" ON public.app_state;
+CREATE POLICY "Allow public read app_state"
+  ON public.app_state
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Allow service_role all app_state" ON public.app_state;
+CREATE POLICY "Allow service_role all app_state"
+  ON public.app_state
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Policies for app_auth & app_sessions (service_role only)
+DROP POLICY IF EXISTS "Allow service_role all app_auth" ON public.app_auth;
+CREATE POLICY "Allow service_role all app_auth"
+  ON public.app_auth
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow service_role all app_sessions" ON public.app_sessions;
+CREATE POLICY "Allow service_role all app_sessions"
+  ON public.app_sessions
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Ensure full row is emitted in Realtime change events
+ALTER TABLE public.app_state REPLICA IDENTITY FULL;
+
+-- Ensure table is in publication
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'app_state'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.app_state;
+  END IF;
+END $$;
 
 -- ============================================================
 -- FUNCTION: cleanup_expired_sessions

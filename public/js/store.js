@@ -87,6 +87,8 @@ class RealTimeStore {
     this.pollTimer = null;
     this.isSaving = false;
     this.heartbeatTimer = null;
+    this.realtimeClient = null;
+    this.realtimeChannel = null;
     this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
 
     if (this.channel) {
@@ -218,6 +220,58 @@ class RealTimeStore {
     }
   }
 
+  async _initSupabaseRealtime() {
+    if (typeof window === 'undefined' || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
+
+    // Clean up previous channel to prevent duplicate subscriptions
+    if (this.realtimeChannel && this.realtimeClient) {
+      try {
+        this.realtimeClient.removeChannel(this.realtimeChannel);
+      } catch {}
+      this.realtimeChannel = null;
+    }
+
+    try {
+      const res = await fetch(`/api/config?_t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const cfg = await res.json();
+      if (!cfg.ok || !cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
+
+      const createClient = window.supabase?.createClient;
+      if (typeof createClient !== 'function') {
+        console.warn('[Realtime] Supabase JS library not loaded.');
+        return;
+      }
+
+      this.realtimeClient = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { headers: { 'x-application-name': 'live-ai-classroom-client' } }
+      });
+
+      this.realtimeChannel = this.realtimeClient
+        .channel('app_state_realtime_channel')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'app_state' },
+          async (payload) => {
+            console.log('[Realtime] Received Supabase database event:', payload.eventType);
+            await this._refreshFromServer({ silent: false });
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Realtime] Subscribed to Supabase real-time updates ✓');
+            this.syncMode = 'supabase-realtime';
+            this._notify('Connected to Supabase Real-Time Cloud');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('[Realtime] Channel error:', err);
+          }
+        });
+    } catch (e) {
+      console.warn('[Realtime] Setup error:', e?.message);
+    }
+  }
+
   async init() {
     this.authApiReady = false;
     this._startPolling();
@@ -260,6 +314,7 @@ class RealTimeStore {
           await this._verifyStoredSessions();
           // Resume heartbeat if student session is valid (page refresh while logged in)
           if (this.getSession()?.token) this.startHeartbeat();
+          await this._initSupabaseRealtime();
           this._notify();
           return;
         }
@@ -272,6 +327,7 @@ class RealTimeStore {
     this._notify();
     // Resume heartbeat if student is already logged in (page refresh)
     if (this.getSession()?.token) this.startHeartbeat();
+    await this._initSupabaseRealtime();
   }
 
   async _verifyStoredSessions() {
@@ -446,7 +502,8 @@ class RealTimeStore {
     }
     this._notify();
 
-    if (this.serverConnected) {
+    // Always persist to server if on http/https
+    if (typeof window !== 'undefined' && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
       const adminToken = this.getAdminSession()?.token || '';
       this.isSaving = true;
       try {
@@ -463,9 +520,22 @@ class RealTimeStore {
           this.state.revision = meta.revision;
           this.state.updatedAt = meta.updatedAt;
           this._saveLocal(this.state);
+          this.serverConnected = true;
+          if (meta.supabaseSaved) {
+            this.syncMode = 'supabase-realtime';
+          }
         } else if (res.status === 403 || res.status === 401) {
           throw new Error('Administrator authentication required.');
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server save failed (HTTP ${res.status})`);
         }
+      } catch (err) {
+        console.error('[Store] Save state error:', err);
+        if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+          window.showToast(err.message || 'Database synchronization failed', 'error');
+        }
+        throw err;
       } finally {
         this.isSaving = false;
       }
@@ -473,6 +543,7 @@ class RealTimeStore {
   }
 
   async _refreshFromServer({ silent = false } = {}) {
+    if (typeof window === 'undefined' || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
     try {
       const res = await fetch(`/api/state?_t=${Date.now()}`, {
         cache: 'no-store',
@@ -480,10 +551,12 @@ class RealTimeStore {
       });
       const ct = (res.headers.get('content-type') || '').toLowerCase();
       if (res.ok && ct.includes('application/json')) {
-        this.state = this._sanitizeState(await res.json());
+        const fresh = this._sanitizeState(await res.json());
+        const latestAct = fresh.activityLog?.[0]?.text || null;
+        this.state = fresh;
         this._saveLocal(this.state);
         this.serverConnected = true;
-        if (!silent) this._notify();
+        if (!silent) this._notify(latestAct);
       }
     } catch {}
   }

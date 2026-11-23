@@ -17,6 +17,33 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
+// Auto-load .env in local development if environment variables are not pre-injected
+if (!process.env.SUPABASE_URL) {
+  try {
+    const envPaths = [
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(__dirname, '../.env'),
+      path.resolve(__dirname, '.env'),
+    ];
+    for (const ep of envPaths) {
+      if (fs.existsSync(ep)) {
+        const raw = fs.readFileSync(ep, 'utf8');
+        raw.split(/\r?\n/).forEach((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          const eq = trimmed.indexOf('=');
+          if (eq > 0) {
+            const k = trimmed.slice(0, eq).trim();
+            const v = trimmed.slice(eq + 1).trim();
+            if (!process.env[k]) process.env[k] = v;
+          }
+        });
+        break;
+      }
+    }
+  } catch {}
+}
+
 // =========================================================================
 // SUPABASE CLIENT (backend-only, service role key — never sent to client)
 // =========================================================================
@@ -25,17 +52,19 @@ let _supabaseKeyType = null;
 function getSupabase() {
   if (_supabase) return _supabase;
   const url = process.env.SUPABASE_URL;
-  const hasServiceKey = !!process.env.SUPABASE_SERVICE_KEY;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const anonKey = process.env.SUPABASE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  const hasServiceKey = !!serviceKey;
+  const key = serviceKey || anonKey;
   if (!url || !key) {
     console.warn('[Supabase] SUPABASE_URL or key not set — Supabase disabled, falling back to /tmp storage.');
     return null;
   }
   _supabaseKeyType = hasServiceKey ? 'service_role' : 'anon_INSECURE';
   if (!hasServiceKey) {
-    console.warn('[Supabase] WARNING: SUPABASE_SERVICE_KEY not set. Using anon key — backend DB operations will be DENIED by RLS. Set SUPABASE_SERVICE_KEY in Vercel Environment Variables.');
+    console.warn('[Supabase] WARNING: SUPABASE_SERVICE_KEY or SUPABASE_SECRET_KEY not set. Using anon key — backend DB operations will be DENIED by RLS. Set SUPABASE_SECRET_KEY in Vercel Environment Variables.');
   } else {
-    console.log('[Supabase] Initializing with service_role key ✓');
+    console.log('[Supabase] Initializing with service_role / secret key ✓');
   }
   try {
     const { createClient } = require('@supabase/supabase-js');
@@ -72,10 +101,11 @@ async function supabaseSet(table, payload, id = 'singleton') {
   const sb = getSupabase();
   if (!sb) return false;
   try {
-    const { error } = await sb.from(table).upsert(
-      { id, data: payload, updated_at: new Date().toISOString() },
-      { onConflict: 'id' }
-    );
+    const upsertObj = { id, data: payload, updated_at: new Date().toISOString() };
+    if (table === 'app_state' && payload && payload.revision) {
+      upsertObj.revision = Number(payload.revision) || 1;
+    }
+    const { error } = await sb.from(table).upsert(upsertObj, { onConflict: 'id' });
     if (error) {
       console.warn(`[Supabase] SET ${table} error:`, error.message);
       return false;
@@ -405,12 +435,49 @@ async function cloudSet(key, value) {
   }
 }
 
+function prepareDbForCloud(db) {
+  if (!db || typeof db !== 'object') return db;
+  const clone = JSON.parse(JSON.stringify(db));
+  // If timetableImage base64 is over 100KB, strip dataUrl for cloud sync so it never chokes HTTP2
+  if (clone.timetableImage && clone.timetableImage.dataUrl && clone.timetableImage.dataUrl.length > 100000) {
+    clone.timetableImage = { ...clone.timetableImage, dataUrl: '' };
+  }
+  // If materials base64 is over 100KB, strip fileDataUrl for cloud sync
+  if (Array.isArray(clone.materials)) {
+    clone.materials = clone.materials.map((m) => {
+      if (m && m.fileDataUrl && m.fileDataUrl.length > 100000) {
+        return { ...m, fileDataUrl: '' };
+      }
+      return m;
+    });
+  }
+  return clone;
+}
+
 async function loadDb() {
   if (cachedDb) return cachedDb;
 
   // TIER 1: Supabase PostgreSQL (preferred — persistent across all Vercel regions)
   const fromSupabase = await supabaseGet('app_state');
-  if (fromSupabase && typeof fromSupabase === 'object' && fromSupabase.revision) {
+  if (fromSupabase && typeof fromSupabase === 'object' && (fromSupabase.revision || fromSupabase.settings)) {
+    // Merge any locally stored large base64 assets if available
+    const localFilePath = locateFile('db.json');
+    if (localFilePath) {
+      try {
+        const localDb = JSON.parse(fs.readFileSync(localFilePath, 'utf8'));
+        if (localDb.timetableImage?.dataUrl && !fromSupabase.timetableImage?.dataUrl) {
+          fromSupabase.timetableImage = localDb.timetableImage;
+        }
+        if (Array.isArray(localDb.materials) && Array.isArray(fromSupabase.materials)) {
+          fromSupabase.materials.forEach((m) => {
+            const locMat = localDb.materials.find((x) => x.id === m.id);
+            if (locMat && locMat.fileDataUrl && !m.fileDataUrl) {
+              m.fileDataUrl = locMat.fileDataUrl;
+            }
+          });
+        }
+      } catch {}
+    }
     cachedDb = fromSupabase;
     console.log('[Storage] Loaded db from Supabase (revision', fromSupabase.revision, ')');
     return cachedDb;
@@ -418,7 +485,7 @@ async function loadDb() {
 
   // TIER 2: Upstash Redis / Vercel KV
   const fromCloud = await cloudGet('live_classroom_db');
-  if (fromCloud && typeof fromCloud === 'object') {
+  if (fromCloud && typeof fromCloud === 'object' && fromCloud.revision) {
     cachedDb = fromCloud;
     console.log('[Storage] Loaded db from Upstash/KV');
     return cachedDb;
@@ -430,6 +497,8 @@ async function loadDb() {
     try {
       cachedDb = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       console.log('[Storage] Loaded db from local file:', filePath);
+      // Auto-migrate to Supabase
+      saveDb(cachedDb).catch(() => {});
       return cachedDb;
     } catch { }
   }
@@ -437,6 +506,7 @@ async function loadDb() {
   // TIER 4: Default seed
   console.log('[Storage] Using default initial db seed');
   cachedDb = getInitialDb();
+  saveDb(cachedDb).catch(() => {});
   return cachedDb;
 }
 
@@ -468,28 +538,60 @@ async function loadAuth() {
       cachedAuth = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       if (!cachedAuth.studentCredentials) cachedAuth.studentCredentials = {};
       console.log('[Storage] Loaded auth from local file:', filePath);
+      saveAuth(cachedAuth).catch(() => {});
       return cachedAuth;
     } catch { }
   }
 
   // TIER 4: Default seed
   cachedAuth = getInitialAuth();
+  saveAuth(cachedAuth).catch(() => {});
   return cachedAuth;
 }
 
 async function saveDb(db) {
   cachedDb = db;
-  // Write to ALL available backends (fire-and-forget for secondary tiers)
-  supabaseSet('app_state', db).catch(() => {});     // TIER 1: Supabase
-  cloudSet('live_classroom_db', db).catch(() => {}); // TIER 2: Upstash/KV
-  saveLocalFile('db.json', db);                      // TIER 3: Local filesystem
+  // Always write full state to local filesystem
+  saveLocalFile('db.json', db);
+
+  // TIER 1: Supabase PostgreSQL (clean payload so it never chokes HTTP2 limits)
+  const cloudPayload = prepareDbForCloud(db);
+  let supabaseSaved = false;
+  let storageUsed = 'local-tmp';
+  try {
+    supabaseSaved = await supabaseSet('app_state', cloudPayload);
+    if (supabaseSaved) {
+      storageUsed = 'supabase-postgresql';
+      console.log('[Storage] Saved db to Supabase (revision', db.revision, ') ✓');
+    } else {
+      console.warn('[Storage] Supabase save returned false for app_state — falling back to /tmp');
+    }
+  } catch (e) {
+    console.warn('[Storage] Supabase saveDb exception:', e?.message);
+  }
+
+  // TIER 2: Upstash / KV backup
+  cloudSet('live_classroom_db', cloudPayload).catch(() => {});
+
+  return { saved: supabaseSaved, storageUsed };
 }
 
 async function saveAuth(auth) {
   cachedAuth = auth;
-  supabaseSet('app_auth', auth).catch(() => {});         // TIER 1: Supabase
-  cloudSet('live_classroom_auth', auth).catch(() => {}); // TIER 2: Upstash/KV
-  saveLocalFile('auth.json', auth);                       // TIER 3: Local filesystem
+  // TIER 1: Supabase — AWAIT this
+  try {
+    const saved = await supabaseSet('app_auth', auth);
+    if (saved) {
+      console.log('[Storage] Saved auth to Supabase ✓');
+    } else {
+      console.warn('[Storage] Supabase save returned false for app_auth');
+    }
+  } catch (e) {
+    console.warn('[Storage] Supabase saveAuth exception:', e?.message);
+  }
+  // Secondary backups
+  cloudSet('live_classroom_auth', auth).catch(() => {});
+  saveLocalFile('auth.json', auth);
 }
 
 // Session Management — hybrid: in-memory (fast) + Supabase (persistent across cold starts)
@@ -659,6 +761,14 @@ module.exports = async function handler(req, res) {
     const reqPath = extractReqPath(req);
     const method = (req.method || 'GET').toUpperCase();
 
+    // Clear per-request so every request reads fresh data from Supabase.
+    // This prevents Vercel warm-instance serving stale cachedDb to concurrent requests.
+    // After saveDb() sets cachedDb, the NEXT request re-reads from Supabase to pick up
+    // any changes from other Vercel instances or cold-start restores.
+    if (method === 'GET' && (reqPath === '/api/state' || reqPath === '/api/version')) {
+      cachedDb = null;  // force re-read from Supabase on state/version GETs
+    }
+
     // Extract authentication token
     const tokenHeader = req.headers['x-auth-token'] || req.headers['authorization'] || '';
     const token = tokenHeader.replace(/^Bearer\s+/i, '').trim();
@@ -679,22 +789,37 @@ module.exports = async function handler(req, res) {
 
     // 1. Health
     if (reqPath === '/api/health') {
-      const sbConfigured = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY));
+      const hasSecret = !!(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY);
+      const hasKey = hasSecret || !!(process.env.SUPABASE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY);
+      const sbConfigured = !!(process.env.SUPABASE_URL && hasKey);
       return sendJson(res, 200, {
         ok: true,
         authEnabled: true,
-        serverVersion: '3.0-supabase',
+        serverVersion: '3.1-supabase-realtime',
         revision: db.revision || 1,
         serverTime: new Date().toISOString(),
         storage: {
           supabase: sbConfigured ? 'configured' : 'not-configured',
-          supabaseServiceKey: !!process.env.SUPABASE_SERVICE_KEY,
+          supabaseServiceKey: hasSecret,
           upstash: !!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)
         }
       });
     }
 
-    // 1b. Supabase Status — GET /api/supabase/status (admin only)
+    // 1b. Public Config — GET /api/config (safe public config for Supabase Realtime in browser)
+    if (reqPath === '/api/config') {
+      if (method !== 'GET') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      const url = process.env.SUPABASE_URL || '';
+      const anonKey = process.env.SUPABASE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+      return sendJson(res, 200, {
+        ok: true,
+        supabaseUrl: url,
+        supabaseAnonKey: anonKey,
+        realtimeEnabled: Boolean(url && anonKey)
+      });
+    }
+
+    // 1c. Supabase Status — GET /api/supabase/status (admin only)
     if (reqPath === '/api/supabase/status') {
       if (method !== 'GET') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
       if (!session || session.role !== 'admin') return sendJson(res, 403, { ok: false, error: 'Admin only' });
@@ -715,8 +840,8 @@ module.exports = async function handler(req, res) {
           connected,
           error,
           url: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.replace(/\/\/.*@/, '//<credentials>@') : null,
-          serviceKeyConfigured: !!process.env.SUPABASE_SERVICE_KEY,
-          anonKeyConfigured: !!process.env.SUPABASE_KEY,
+          serviceKeyConfigured: !!(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY),
+          anonKeyConfigured: !!(process.env.SUPABASE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY),
           activeKeyType: _supabaseKeyType || (sb ? 'unknown' : 'none')
         },
         storageMode,
@@ -1052,9 +1177,15 @@ module.exports = async function handler(req, res) {
 
       body.revision = (db.revision || 1) + 1;
       body.updatedAt = new Date().toISOString();
-      await saveDb(body);
+      const saveResult = await saveDb(body);
 
-      return sendJson(res, 200, { ok: true, revision: body.revision, updatedAt: body.updatedAt });
+      return sendJson(res, 200, {
+        ok: true,
+        revision: body.revision,
+        updatedAt: body.updatedAt,
+        storageUsed: saveResult?.storageUsed || 'unknown',
+        supabaseSaved: saveResult?.saved === true,
+      });
     }
 
     // 12. Heartbeat — POST /api/heartbeat (student sends every 30s to signal presence)
@@ -1148,6 +1279,26 @@ module.exports = async function handler(req, res) {
         db.updatedAt = new Date().toISOString();
         await saveDb(db);
         return sendJson(res, 200, { ok: true, revision: db.revision });
+      }
+
+      if (action === 'postLiveQA') {
+        const cls = (db.liveClasses || []).find((c) => c && c.id === String(body.classId || ''));
+        if (cls) {
+          cls.qa = cls.qa || [];
+          cls.qa.push({
+            id: 'qa-' + Date.now(),
+            author: session.name || 'Student',
+            regNo: String(body.regNo || ''),
+            text: String(body.text || '').trim(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+          addActivityLog(db, `${session.name} asked a question in live class`);
+          db.revision = (db.revision || 1) + 1;
+          db.updatedAt = new Date().toISOString();
+          await saveDb(db);
+          return sendJson(res, 200, { ok: true, revision: db.revision });
+        }
+        return sendJson(res, 404, { ok: false, error: 'Live class not found' });
       }
 
       return sendJson(res, 400, { ok: false, error: 'Unknown student action' });

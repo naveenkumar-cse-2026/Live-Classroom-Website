@@ -1,3 +1,11 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Scratch & Temporary
+scratch/
+Mobile Devices/
+
 # Ephemeral sessions and runtime data
 data/sessions.json
 *.log
