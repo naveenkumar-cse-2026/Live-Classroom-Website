@@ -100,19 +100,32 @@ async function supabaseGet(table, id = 'singleton') {
 async function supabaseSet(table, payload, id = 'singleton') {
   const sb = getSupabase();
   if (!sb) return false;
+  const upsertObj = { id, data: payload, updated_at: new Date().toISOString() };
+  if (table === 'app_state' && payload && payload.revision) {
+    upsertObj.revision = Number(payload.revision) || 1;
+  }
+
+  // Attempt 1
   try {
-    const upsertObj = { id, data: payload, updated_at: new Date().toISOString() };
-    if (table === 'app_state' && payload && payload.revision) {
-      upsertObj.revision = Number(payload.revision) || 1;
-    }
     const { error } = await sb.from(table).upsert(upsertObj, { onConflict: 'id' });
-    if (error) {
-      console.warn(`[Supabase] SET ${table} error:`, error.message);
-      return false;
-    }
-    return true;
+    if (!error) return true;
+    console.warn(`[Supabase] SET ${table} initial attempt error:`, error.message);
   } catch (e) {
-    console.warn(`[Supabase] SET ${table} exception:`, e?.message);
+    console.warn(`[Supabase] SET ${table} initial exception:`, e?.message);
+  }
+
+  // Retry once with a brief backoff (handles transient HTTP/2 socket drops & keep-alive reuse)
+  try {
+    await new Promise((r) => setTimeout(r, 500));
+    const { error } = await sb.from(table).upsert(upsertObj, { onConflict: 'id' });
+    if (!error) {
+      console.log(`[Supabase] SET ${table} retry succeeded ✓`);
+      return true;
+    }
+    console.warn(`[Supabase] SET ${table} retry error:`, error.message);
+    return false;
+  } catch (e) {
+    console.warn(`[Supabase] SET ${table} retry exception:`, e?.message);
     return false;
   }
 }
@@ -460,24 +473,6 @@ async function loadDb() {
   // TIER 1: Supabase PostgreSQL (preferred — persistent across all Vercel regions)
   const fromSupabase = await supabaseGet('app_state');
   if (fromSupabase && typeof fromSupabase === 'object' && (fromSupabase.revision || fromSupabase.settings)) {
-    // Merge any locally stored large base64 assets if available
-    const localFilePath = locateFile('db.json');
-    if (localFilePath) {
-      try {
-        const localDb = JSON.parse(fs.readFileSync(localFilePath, 'utf8'));
-        if (localDb.timetableImage?.dataUrl && !fromSupabase.timetableImage?.dataUrl) {
-          fromSupabase.timetableImage = localDb.timetableImage;
-        }
-        if (Array.isArray(localDb.materials) && Array.isArray(fromSupabase.materials)) {
-          fromSupabase.materials.forEach((m) => {
-            const locMat = localDb.materials.find((x) => x.id === m.id);
-            if (locMat && locMat.fileDataUrl && !m.fileDataUrl) {
-              m.fileDataUrl = locMat.fileDataUrl;
-            }
-          });
-        }
-      } catch {}
-    }
     cachedDb = fromSupabase;
     console.log('[Storage] Loaded db from Supabase (revision', fromSupabase.revision, ')');
     return cachedDb;
@@ -1178,6 +1173,17 @@ module.exports = async function handler(req, res) {
       body.revision = (db.revision || 1) + 1;
       body.updatedAt = new Date().toISOString();
       const saveResult = await saveDb(body);
+
+      // If Supabase is configured and save to Supabase failed, do NOT claim success!
+      const hasSupabase = !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY));
+      if (hasSupabase && !saveResult?.saved) {
+        return sendJson(res, 500, {
+          ok: false,
+          error: 'Database write to Supabase failed. Changes could not be permanently saved.',
+          storageUsed: saveResult?.storageUsed || 'failed',
+          supabaseSaved: false
+        });
+      }
 
       return sendJson(res, 200, {
         ok: true,

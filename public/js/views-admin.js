@@ -108,6 +108,10 @@ function openNoticeModal(existing = null) {
   `, (host) => {
     host.querySelector('#noticeModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         category: host.querySelector('#notCat').value,
         tagColor: host.querySelector('#notColor').value,
@@ -115,14 +119,20 @@ function openNoticeModal(existing = null) {
         body: host.querySelector('#notBody').value,
         hasAttachment: host.querySelector('#notAttach').checked,
       };
-      if (isEdit) {
-        await store.updateNotice(existing.id, payload);
-        showToast('Notice updated!', 'success');
-      } else {
-        await store.publishNotice(payload);
-        showToast('Notice published to Student App!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateNotice(existing.id, payload);
+          showToast('Notice updated and synced!', 'success');
+        } else {
+          await store.publishNotice(payload);
+          showToast('Notice published and synced to Student App!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save notice', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -265,6 +275,10 @@ function openAddEditStudentModal(existing = null) {
   `, (host) => {
     host.querySelector('#studentModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         name: host.querySelector('#stuName').value.trim(),
         email: host.querySelector('#stuEmail').value.trim(),
@@ -278,14 +292,20 @@ function openAddEditStudentModal(existing = null) {
       const pwd = host.querySelector('#stuPwd').value;
       if (pwd) payload.password = pwd;
 
-      if (isEdit) {
-        await store.updateStudent(existing.id, payload);
-        showToast(`Updated ${payload.name}'s record`, 'success');
-      } else {
-        await store.registerOrAddStudent(payload, { markLoggedIn: false });
-        showToast(`Added ${payload.name} (${payload.regNo}) — Active once they sign in.`, 'success');
+      try {
+        if (isEdit) {
+          await store.updateStudent(existing.id, payload);
+          showToast(`Updated ${payload.name}'s record`, 'success');
+        } else {
+          await store.registerOrAddStudent(payload, { markLoggedIn: false });
+          showToast(`Added ${payload.name} (${payload.regNo}) — Active once they sign in.`, 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save student record', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
       }
-      closeModal();
     });
   });
 }
@@ -362,6 +382,10 @@ function openTeacherModal(existing = null) {
   `, (host) => {
     host.querySelector('#teacherModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         name: host.querySelector('#teaName').value.trim(),
         staffId: host.querySelector('#teaStaffId').value.trim(),
@@ -372,15 +396,21 @@ function openTeacherModal(existing = null) {
         status: host.querySelector('#teaStatus').value,
         classesToday: Math.max(0, Number(host.querySelector('#teaClassesToday').value) || 0),
       };
-      if (isEdit) {
-        if (!payload.staffId) payload.staffId = existing.staffId;
-        await store.updateTeacher(existing.id, payload);
-        showToast(`Updated ${payload.name}'s profile`, 'success');
-      } else {
-        await store.addTeacher(payload);
-        showToast(`Added ${payload.name} to faculty directory!`, 'success');
+      try {
+        if (isEdit) {
+          if (!payload.staffId) payload.staffId = existing.staffId;
+          await store.updateTeacher(existing.id, payload);
+          showToast(`Updated ${payload.name}'s profile`, 'success');
+        } else {
+          await store.addTeacher(payload);
+          showToast(`Added ${payload.name} to faculty directory!`, 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save faculty record', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -1410,6 +1440,10 @@ function openMaterialModal(existing = null) {
 
     host.querySelector('#matModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         course: host.querySelector('#matCourse').value.trim(),
         module: host.querySelector('#matModule').value.trim(),
@@ -1422,14 +1456,20 @@ function openMaterialModal(existing = null) {
         size: pendingFile?.size || '',
         meta: pendingFile?.fileName ? `${pendingFile.fileName} • ${pendingFile.size}` : 'Study Notes',
       };
-      if (isEdit) {
-        await store.updateMaterial(existing.id, payload);
-        showToast('Study material updated!', 'success');
-      } else {
-        await store.addMaterial(payload);
-        showToast('Study material uploaded and synced to Student Vault!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateMaterial(existing.id, payload);
+          showToast('Study material updated and synced!', 'success');
+        } else {
+          await store.addMaterial(payload);
+          showToast('Study material uploaded and synced to Student Vault!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save study material', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -1470,20 +1510,30 @@ function openAssignmentModal(existing = null) {
   `, (host) => {
     host.querySelector('#asgModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         course: host.querySelector('#asgCourse').value.trim().toUpperCase(),
         dueLabel: host.querySelector('#asgDue').value.trim(),
         title: host.querySelector('#asgTitle').value.trim(),
         description: host.querySelector('#asgDesc').value.trim(),
       };
-      if (isEdit) {
-        await store.updateAssignment(existing.id, payload);
-        showToast('Assignment updated!', 'success');
-      } else {
-        await store.addAssignment(payload);
-        showToast('Assignment published to Student Portal!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateAssignment(existing.id, payload);
+          showToast('Assignment updated and synced!', 'success');
+        } else {
+          await store.addAssignment(payload);
+          showToast('Assignment published to Student Portal!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save assignment', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -1803,6 +1853,10 @@ function openSlotModal(existing = null) {
   `, (host) => {
     host.querySelector('#slotModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const instructor = host.querySelector('#slotInstructor').value.trim();
       const room = host.querySelector('#slotRoom').value.trim();
       const isLive = host.querySelector('#slotLive').checked;
@@ -1819,9 +1873,15 @@ function openSlotModal(existing = null) {
         live: isLive,
       };
       if (existing?.id) payload.id = existing.id;
-      await store.upsertTimetableSlot(payload);
-      closeModal();
-      showToast(isEdit ? 'Timetable period updated and saved!' : 'Timetable period added and saved!', 'success');
+      try {
+        await store.upsertTimetableSlot(payload);
+        closeModal();
+        showToast(isEdit ? 'Timetable period updated and saved!' : 'Timetable period added and saved!', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to save timetable slot', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
     });
   });
 }
@@ -1866,6 +1926,10 @@ function openEventModal(existing = null) {
   `, (host) => {
     host.querySelector('#evModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         title: host.querySelector('#evTitle').value.trim(),
         date: host.querySelector('#evDate').value,
@@ -1873,14 +1937,20 @@ function openEventModal(existing = null) {
         venue: host.querySelector('#evVenue').value.trim(),
         description: host.querySelector('#evDesc').value.trim(),
       };
-      if (isEdit) {
-        await store.updateEvent(existing.id, payload);
-        showToast('Campus event updated!', 'success');
-      } else {
-        await store.addEvent(payload);
-        showToast('Campus event added!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateEvent(existing.id, payload);
+          showToast('Campus event updated and synced!', 'success');
+        } else {
+          await store.addEvent(payload);
+          showToast('Campus event added and synced!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save campus event', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -2216,6 +2286,10 @@ function openDepartmentModal(existing = null) {
   `, (host) => {
     host.querySelector('#deptModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         name: host.querySelector('#dName').value.trim(),
         shortName: host.querySelector('#dShort').value.trim(),
@@ -2223,14 +2297,20 @@ function openDepartmentModal(existing = null) {
         hod: host.querySelector('#dHod').value.trim(),
         courses: host.querySelector('#dCourses').value,
       };
-      if (isEdit) {
-        await store.updateDepartment(existing.id, payload);
-        showToast('Department updated across the entire application!', 'success');
-      } else {
-        await store.addDepartment(payload);
-        showToast('Department added and synced to all dropdowns!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateDepartment(existing.id, payload);
+          showToast('Department updated and synced!', 'success');
+        } else {
+          await store.addDepartment(payload);
+          showToast('Department added and synced!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save department', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -2288,6 +2368,10 @@ function openProgramModal(existing = null) {
   `, (host) => {
     host.querySelector('#progModalForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = host.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
       const payload = {
         name: host.querySelector('#pName').value.trim(),
         code: host.querySelector('#pCode').value.trim(),
@@ -2295,14 +2379,20 @@ function openProgramModal(existing = null) {
         duration: host.querySelector('#pDuration').value.trim(),
         department: host.querySelector('#pDept').value.trim(),
       };
-      if (isEdit) {
-        await store.updateProgram(existing.id, payload);
-        showToast('Academic program updated!', 'success');
-      } else {
-        await store.addProgram(payload);
-        showToast('Academic program added and synced!', 'success');
+      try {
+        if (isEdit) {
+          await store.updateProgram(existing.id, payload);
+          showToast('Academic program updated and synced!', 'success');
+        } else {
+          await store.addProgram(payload);
+          showToast('Academic program added and synced!', 'success');
+        }
+        closeModal();
+      } catch (err) {
+        showToast(err.message || 'Failed to save academic program', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
-      closeModal();
     });
   });
 }
@@ -2566,20 +2656,31 @@ export function renderAdminSettings(container) {
   });
 
   container.querySelector('#saveSettingsBtn').addEventListener('click', async () => {
-    await store.updateSettings({
-      collegeName: container.querySelector('#setCollegeName').value.trim(),
-      collegeCode: container.querySelector('#setCollegeCode').value.trim(),
-      domain: container.querySelector('#setDomain').value.trim(),
-      address: container.querySelector('#setAddress').value.trim(),
-      autoTranscripts: container.querySelector('#toggleTranscripts').checked,
-      scanAndSolveEnabled: container.querySelector('#toggleScanSolve').checked,
-    });
-    await store.updateAdminProfile({
-      name: container.querySelector('#setAdminName').value.trim() || 'Administrator',
-      designation: container.querySelector('#setAdminRole').value.trim() || 'System Administrator',
-      email: container.querySelector('#setAdminEmail').value.trim(),
-    });
-    showToast('All college settings & administrator profile saved!', 'success');
+    const btn = container.querySelector('#saveSettingsBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving Settings...';
+    try {
+      await store.updateSettings({
+        collegeName: container.querySelector('#setCollegeName').value.trim(),
+        collegeCode: container.querySelector('#setCollegeCode').value.trim(),
+        domain: container.querySelector('#setDomain').value.trim(),
+        address: container.querySelector('#setAddress').value.trim(),
+        autoTranscripts: container.querySelector('#toggleTranscripts').checked,
+        scanAndSolveEnabled: container.querySelector('#toggleScanSolve').checked,
+      });
+      await store.updateAdminProfile({
+        name: container.querySelector('#setAdminName').value.trim() || 'Administrator',
+        designation: container.querySelector('#setAdminRole').value.trim() || 'System Administrator',
+        email: container.querySelector('#setAdminEmail').value.trim(),
+      });
+      showToast('All college settings & administrator profile saved permanently!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save settings', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   });
 
   container.querySelector('#toggleScanSolve').addEventListener('change', async (e) => {

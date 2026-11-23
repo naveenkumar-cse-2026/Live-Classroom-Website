@@ -470,7 +470,29 @@ class RealTimeStore {
     }
   }
 
+  _preparePayloadForServer(rawState) {
+    if (!rawState || typeof rawState !== 'object') return rawState;
+    const clone = JSON.parse(JSON.stringify(rawState));
+    // Strip oversized base64 data URLs (>80KB) so PUT request payload is lightweight (~80-100KB)
+    // and never triggers HTTP2 frame resets, ECONNRESET, or Vercel serverless timeouts
+    if (clone.timetableImage && clone.timetableImage.dataUrl && clone.timetableImage.dataUrl.length > 80000) {
+      clone.timetableImage = { ...clone.timetableImage, dataUrl: '' };
+    }
+    if (Array.isArray(clone.materials)) {
+      clone.materials = clone.materials.map((m) => {
+        if (m && m.fileDataUrl && m.fileDataUrl.length > 80000) {
+          return { ...m, fileDataUrl: '' };
+        }
+        return m;
+      });
+    }
+    return clone;
+  }
+
   async mutate(mutatorFn, activityNote = '') {
+    // Snapshot previous state for rollback if server persistence fails
+    const previousState = JSON.parse(JSON.stringify(this.state));
+
     mutatorFn(this.state);
     this.state.revision = (this.state.revision || 0) + 1;
     this.state.updatedAt = new Date().toISOString();
@@ -481,8 +503,9 @@ class RealTimeStore {
       ];
     }
 
-    // Prepare payload for backend (may contain transient _newPassword for newly added/updated student)
-    const payloadToSend = JSON.stringify(this.state);
+    // Prepare lightweight payload for backend (strips huge base64 blobs)
+    const stateToSend = this._preparePayloadForServer(this.state);
+    const payloadToSend = JSON.stringify(stateToSend);
 
     // Strip any transient _newPassword from local state & localStorage immediately
     if (Array.isArray(this.state.students)) {
@@ -493,14 +516,6 @@ class RealTimeStore {
         }
       });
     }
-
-    this._saveLocal(this.state);
-    if (this.channel) {
-      try {
-        this.channel.postMessage({ type: 'STATE_SYNC', state: this.state, eventNote: activityNote });
-      } catch {}
-    }
-    this._notify();
 
     // Always persist to server if on http/https
     if (typeof window !== 'undefined' && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
@@ -524,6 +539,12 @@ class RealTimeStore {
           if (meta.supabaseSaved) {
             this.syncMode = 'supabase-realtime';
           }
+          if (this.channel) {
+            try {
+              this.channel.postMessage({ type: 'STATE_SYNC', state: this.state, eventNote: activityNote });
+            } catch {}
+          }
+          this._notify();
         } else if (res.status === 403 || res.status === 401) {
           throw new Error('Administrator authentication required.');
         } else {
@@ -531,7 +552,11 @@ class RealTimeStore {
           throw new Error(errData.error || `Server save failed (HTTP ${res.status})`);
         }
       } catch (err) {
-        console.error('[Store] Save state error:', err);
+        console.error('[Store] Save state error — rolling back changes:', err);
+        // ROLLBACK to snapshot so client state does not falsely diverge from database
+        this.state = previousState;
+        this._saveLocal(this.state);
+        this._notify('Database save failed — rolled back changes');
         if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
           window.showToast(err.message || 'Database synchronization failed', 'error');
         }
@@ -539,6 +564,15 @@ class RealTimeStore {
       } finally {
         this.isSaving = false;
       }
+    } else {
+      // Local / offline file mode
+      this._saveLocal(this.state);
+      if (this.channel) {
+        try {
+          this.channel.postMessage({ type: 'STATE_SYNC', state: this.state, eventNote: activityNote });
+        } catch {}
+      }
+      this._notify();
     }
   }
 
