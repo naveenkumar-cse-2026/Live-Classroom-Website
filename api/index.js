@@ -590,20 +590,34 @@ async function saveAuth(auth) {
 }
 
 // Session Management — hybrid: in-memory (fast) + Supabase (persistent across cold starts)
-function getSession(token) {
+async function getSession(token) {
   if (!token) return null;
   loadSessions();
-  const sess = cachedSessions[token];
-  if (!sess) return null;
-  if (new Date(sess.expiresAt) <= new Date()) {
-    delete cachedSessions[token];
-    saveSessions();
-    return null;
+  let sess = cachedSessions[token];
+  if (sess) {
+    if (new Date(sess.expiresAt) <= new Date()) {
+      delete cachedSessions[token];
+      saveSessions();
+      return null;
+    }
+    return sess;
   }
-  return sess;
+
+  // Cross-instance persistent lookup via Supabase PostgreSQL
+  try {
+    const fromSupabase = await supabaseGetSession(token);
+    if (fromSupabase) {
+      cachedSessions[token] = fromSupabase;
+      return fromSupabase;
+    }
+  } catch (e) {
+    console.warn('[Session] Supabase session lookup error:', e?.message);
+  }
+
+  return null;
 }
 
-function createSession(role, userId, name) {
+async function createSession(role, userId, name) {
   loadSessions();
   const token = generateToken();
   const session = {
@@ -612,12 +626,16 @@ function createSession(role, userId, name) {
     userId,
     name,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
   };
   cachedSessions[token] = session;
   saveSessions();
-  // Also persist session to Supabase (fire-and-forget) — pass same token to avoid mismatch
-  supabaseCreateSession(role, userId, name, token).catch(() => {});
+  // Persist session to Supabase so all serverless instances immediately recognize it
+  try {
+    await supabaseCreateSession(role, userId, name, token);
+  } catch (e) {
+    console.warn('[Session] supabaseCreateSession error:', e?.message);
+  }
   return session;
 }
 
@@ -767,7 +785,7 @@ module.exports = async function handler(req, res) {
     // Extract authentication token
     const tokenHeader = req.headers['x-auth-token'] || req.headers['authorization'] || '';
     const token = tokenHeader.replace(/^Bearer\s+/i, '').trim();
-    const session = getSession(token);
+    const session = await getSession(token);
 
     // Parse body for write operations
     let body = {};
@@ -911,7 +929,7 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 401, { ok: false, error: 'Invalid administrator name or password' });
       }
 
-      const newSess = createSession('admin', 'admin-primary', admin.name || inName);
+      const newSess = await createSession('admin', 'admin-primary', admin.name || inName);
       addActivityLog(db, `Administrator ${admin.name || inName} signed in`);
       db.revision = (db.revision || 1) + 1;
       db.updatedAt = new Date().toISOString();
@@ -1020,7 +1038,7 @@ module.exports = async function handler(req, res) {
       db.updatedAt = new Date().toISOString();
       await saveDb(db);
 
-      const newSess = createSession('student', match.id, match.name);
+      const newSess = await createSession('student', match.id, match.name);
       return sendJson(res, 200, {
         ok: true,
         token: newSess.token,
@@ -1087,7 +1105,7 @@ module.exports = async function handler(req, res) {
       db.updatedAt = nowIso;
       await saveDb(db);
 
-      const newSess = createSession('student', stuId, name);
+      const newSess = await createSession('student', stuId, name);
       return sendJson(res, 200, {
         ok: true,
         token: newSess.token,

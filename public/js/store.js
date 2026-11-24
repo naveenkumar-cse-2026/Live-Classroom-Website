@@ -546,7 +546,16 @@ class RealTimeStore {
           }
           this._notify();
         } else if (res.status === 403 || res.status === 401) {
-          throw new Error('Administrator authentication required.');
+          this.clearAdminSession();
+          if (typeof window !== 'undefined') {
+            if (typeof window.showToast === 'function') {
+              window.showToast('Administrator session expired. Redirecting to login...', 'warning');
+            }
+            setTimeout(() => {
+              window.location.hash = '#admin/login';
+            }, 800);
+          }
+          throw new Error('Administrator session expired. Please sign in again.');
         } else {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || `Server save failed (HTTP ${res.status})`);
@@ -557,9 +566,7 @@ class RealTimeStore {
         this.state = previousState;
         this._saveLocal(this.state);
         this._notify('Database save failed — rolled back changes');
-        if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-          window.showToast(err.message || 'Database synchronization failed', 'error');
-        }
+        // Rethrow so the caller's try/catch can display the specific context error
         throw err;
       } finally {
         this.isSaving = false;
