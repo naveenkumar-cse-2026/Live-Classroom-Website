@@ -213,6 +213,46 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+const SESSION_SECRET = process.env.SESSION_SECRET || 'live-ai-classroom-session-key-v2-2026';
+
+function signSessionToken(sessionData) {
+  const payload = {
+    r: sessionData.role,
+    u: sessionData.userId,
+    n: sessionData.name,
+    exp: sessionData.expiresAt,
+    iat: sessionData.createdAt || new Date().toISOString(),
+    rnd: crypto.randomBytes(8).toString('hex')
+  };
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
+  return `sess_${body}.${sig}`;
+}
+
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  if (!token.startsWith('sess_')) return null;
+  const parts = token.slice(5).split('.');
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+  const expected = crypto.createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (payload.exp && new Date(payload.exp) <= new Date()) return null;
+    return {
+      token,
+      role: payload.r,
+      userId: payload.u,
+      name: payload.n,
+      createdAt: payload.iat,
+      expiresAt: payload.exp
+    };
+  } catch {
+    return null;
+  }
+}
+
 function makeInitials(name = '') {
   const clean = String(name || '').replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s*/i, '').trim();
   if (!clean) return 'AD';
@@ -589,7 +629,7 @@ async function saveAuth(auth) {
   saveLocalFile('auth.json', auth);
 }
 
-// Session Management — hybrid: in-memory (fast) + Supabase (persistent across cold starts)
+// Session Management — hybrid: in-memory (fast) + cryptographic stateless signature (cold-start proof) + Supabase
 async function getSession(token) {
   if (!token) return null;
   loadSessions();
@@ -601,6 +641,13 @@ async function getSession(token) {
       return null;
     }
     return sess;
+  }
+
+  // Fast stateless verify (survives cold starts & multi-container serverless without database call)
+  const signed = verifySessionToken(token);
+  if (signed) {
+    cachedSessions[token] = signed;
+    return signed;
   }
 
   // Cross-instance persistent lookup via Supabase PostgreSQL
@@ -619,15 +666,16 @@ async function getSession(token) {
 
 async function createSession(role, userId, name) {
   loadSessions();
-  const token = generateToken();
-  const session = {
-    token,
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+  const sessionBase = {
     role,
     userId,
     name,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+    expiresAt
   };
+  const token = signSessionToken(sessionBase);
+  const session = { ...sessionBase, token };
   cachedSessions[token] = session;
   saveSessions();
   // Persist session to Supabase so all serverless instances immediately recognize it

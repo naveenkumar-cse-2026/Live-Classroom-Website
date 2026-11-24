@@ -3,8 +3,6 @@ import { esc, showToast } from './ui.js';
 import { renderAuthView, renderAdminLoginView } from './views-auth.js';
 import {
   renderStudentHome,
-  renderAIChat,
-  renderScanSolve,
   renderStudyVault,
   renderAssignmentsNotices,
   renderStudentProfile,
@@ -23,8 +21,6 @@ const ROUTES = {
   'auth': renderAuthView,
   'admin/login': renderAdminLoginView,
   'student/home': renderStudentHome,
-  'student/chat': renderAIChat,
-  'student/scan': renderScanSolve,
   'student/vault': renderStudyVault,
   'student/assignments': renderAssignmentsNotices,
   'student/profile': renderStudentProfile,

@@ -1,5 +1,5 @@
 import { store } from './store.js';
-import { generateTutorReply, runScanAndSolve, runAiPrecheckGrader } from './ai-engine.js';
+import { runAiPrecheckGrader } from './ai-engine.js';
 import {
   esc,
   showToast,
@@ -13,12 +13,81 @@ import {
 } from './ui.js';
 
 let activeCameraStream = null;
+let timetableLiveTimer = null;
+let selectedTimetableDay = null; // null defaults to current IST day
 
 export function cleanupStudentViews() {
+  if (timetableLiveTimer) {
+    clearInterval(timetableLiveTimer);
+    timetableLiveTimer = null;
+  }
   if (activeCameraStream) {
     activeCameraStream.getTracks().forEach((t) => t.stop());
     activeCameraStream = null;
   }
+}
+
+export function getISTDateInfo() {
+  const now = new Date();
+  const istFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+  const parts = istFormatter.formatToParts(now);
+  const getPart = (type) => parts.find((p) => p.type === type)?.value || '';
+
+  const weekdayShort = getPart('weekday'); // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+  const hour = parseInt(getPart('hour'), 10) || 0;
+  const minute = parseInt(getPart('minute'), 10) || 0;
+  const currentMinutes = hour * 60 + minute;
+  const dateStr = `${getPart('weekday')}, ${getPart('month')} ${getPart('day')}, ${getPart('year')}`;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+  const timeStr = `${String(displayHour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+
+  return {
+    day: weekdayShort,
+    hour,
+    minute,
+    currentMinutes,
+    dateStr,
+    timeStr,
+  };
+}
+
+export function parseSlotMinutes(slotStr) {
+  if (!slotStr) return null;
+  const normalized = slotStr.replace(/(\d+)\.(\d+)/g, '$1:$2').trim();
+  const parts = normalized.split(/\s*-\s*/);
+  if (parts.length < 2) return null;
+
+  const parseSingle = (timePart) => {
+    let t = timePart.trim().toUpperCase();
+    let isPM = t.includes('PM');
+    let isAM = t.includes('AM');
+    t = t.replace(/[AP]M/gi, '').trim();
+    const [hStr, mStr] = t.split(':');
+    let h = parseInt(hStr, 10);
+    const m = parseInt(mStr || '0', 10);
+    if (isNaN(h)) return 0;
+    if (!isPM && !isAM) {
+      if (h >= 1 && h <= 6) isPM = true;
+    }
+    if (isPM && h < 12) h += 12;
+    if (isAM && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  const start = parseSingle(parts[0]);
+  const end = parseSingle(parts[1]);
+  return { start, end };
 }
 
 function getStudentOrPrompt(container) {
@@ -154,9 +223,6 @@ export function renderStudentHome(container) {
             <span class="material-symbols-outlined text-[20px]">notifications</span>
             ${notices.length > 0 ? `<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-neon-purple shadow-[0_0_6px_rgba(74,144,226,0.4)]"></span>` : ''}
           </button>
-          <a href="#student/chat" title="Live AI Tutor" class="w-9 h-9 rounded-full bg-deep-violet/30 border border-[#4A90E2]/25 flex items-center justify-center text-neon-purple hover:bg-neon-purple/30 hover:text-[#172B4D] transition-all">
-            <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
-          </a>
         </div>
       </header>
 
@@ -166,86 +232,55 @@ export function renderStudentHome(container) {
           ${renderSyncPill()}
         </div>
 
-        <!-- AI Assistant Hero Banner -->
-        <section class="relative rounded-xl p-5 bg-gradient-to-br from-[#EBF4FF] via-[#F0F8FF] to-white border border-[#4A90E2]/20 shadow-[0_8px_32px_rgba(74,144,226,0.1)] overflow-hidden group">
-          <div class="absolute -top-12 -right-12 w-32 h-32 bg-[#4A90E2]/15 rounded-full blur-2xl"></div>
-          <div class="flex items-start justify-between relative z-10 mb-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#4A90E2]/10 border border-[#4A90E2]/30 text-[#64748B] text-label-sm font-label">
-              <span class="material-symbols-outlined text-sm text-neon-purple animate-pulse">psychology</span>
-              <span>Live Academic Copilot</span>
-            </div>
-            <span class="font-code text-label-sm text-[#64748B]/60">${esc(settings.aiEngineVersion)}</span>
+        <!-- Real-Time Timetable Hero Banner -->
+        <section class="relative rounded-2xl p-5 bg-gradient-to-br from-[#EBF4FF] via-[#F0F8FF] to-white border border-[#4A90E2]/25 shadow-[0_8px_32px_rgba(74,144,226,0.12)] overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#4A90E2]/15 rounded-full blur-2xl"></div>
+          <div class="flex items-center justify-between relative z-10 mb-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#4A90E2]/12 border border-[#4A90E2]/30 text-[#172B4D] font-code text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              IST Real-Time Schedule
+            </span>
+            <span id="heroClockText" class="font-code text-xs text-[#64748B] font-medium"></span>
           </div>
-          <div class="relative z-10 mb-4">
-            <h2 class="font-headline text-headline-sm text-[#172B4D] mb-1">Ask Your AI Study Assistant</h2>
-            <p class="text-body-sm text-[#64748B]/80">
-              Ask course questions or scan equations and lecture notes for step-by-step solutions.
-            </p>
-          </div>
-          <div class="relative z-10 flex items-center gap-3">
-            <a href="#student/chat" class="flex-1 py-2.5 px-4 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-label-lg shadow-[0_0_20px_rgba(74,144,226,0.2)] flex items-center justify-center gap-2 border border-[#4A90E2]/35 active:scale-95 transition-all">
-              <span class="material-symbols-outlined text-[18px]">chat</span>
-              <span>Ask Assistant</span>
-            </a>
-            <a href="#student/scan" class="py-2.5 px-3.5 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 hover:border-[#4A90E2]/40 text-[#64748B] hover:text-[#172B4D] flex items-center gap-1.5 text-label-md transition-colors">
-              <span class="material-symbols-outlined text-[18px] text-neon-purple">photo_camera</span>
-              <span>Scan</span>
-            </a>
+          <div class="relative z-10">
+            <h2 id="heroDayDateText" class="font-headline text-headline-sm text-[#172B4D] font-bold"></h2>
+            <p id="heroPeriodSummaryText" class="text-body-sm text-[#64748B] mt-1"></p>
           </div>
         </section>
 
-        <!-- Quick Actions -->
+        <!-- Quick Actions (Clean 3-Column Grid) -->
         <section>
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-headline text-title-lg text-[#172B4D]">Quick Actions</h2>
           </div>
-          <div class="grid grid-cols-2 gap-3.5">
-            <a href="#student/scan" class="p-4 rounded-lg bg-white/80 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group">
-              <div class="w-10 h-10 rounded-md bg-neon-purple/20 border border-[#4A90E2]/25 text-neon-purple flex items-center justify-center mb-3">
-                <span class="material-symbols-outlined text-[22px]">document_scanner</span>
+          <div class="grid grid-cols-3 gap-3">
+            <a href="#student/vault" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
+              <div class="w-9 h-9 rounded-lg bg-deep-violet/30 border border-deep-violet/50 text-[#64748B] flex items-center justify-center mb-2">
+                <span class="material-symbols-outlined text-[20px]">menu_book</span>
               </div>
               <div>
-                <h3 class="font-headline text-title-md text-[#172B4D]">Scan &amp; Solve</h3>
-                <p class="text-body-sm text-[#64748B]/70 text-xs mt-0.5">Equation &amp; OCR solver</p>
+                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Study Vault</h3>
+                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${materials.length} files</p>
               </div>
             </a>
 
-            <a href="#student/vault" class="p-4 rounded-lg bg-white/80 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-md bg-deep-violet/30 border border-deep-violet/50 text-[#64748B] flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[22px]">menu_book</span>
-                </div>
-                <span class="px-2 py-0.5 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 text-[#64748B] font-code text-[11px]">${materials.length}</span>
+            <a href="#student/assignments" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 flex items-center justify-center mb-2">
+                <span class="material-symbols-outlined text-[20px]">assignment</span>
               </div>
               <div>
-                <h3 class="font-headline text-title-md text-[#172B4D]">Study Vault</h3>
-                <p class="text-body-sm text-[#64748B]/70 text-xs mt-0.5">${materials.length} uploaded ${materials.length === 1 ? 'file' : 'files'}</p>
+                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Assignments</h3>
+                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${pendingCount} due</p>
               </div>
             </a>
 
-            <a href="#student/assignments" class="p-4 rounded-lg bg-white/80 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[22px]">assignment</span>
-                </div>
-                <span class="px-2 py-0.5 rounded-full bg-neon-purple/20 border border-[#4A90E2]/25 text-neon-purple font-code text-[11px]">${pendingCount} Due</span>
+            <a href="#student/assignments?tab=notices" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
+              <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center mb-2">
+                <span class="material-symbols-outlined text-[20px]">campaign</span>
               </div>
               <div>
-                <h3 class="font-headline text-title-md text-[#172B4D]">Assignments</h3>
-                <p class="text-body-sm text-[#64748B]/70 text-xs mt-0.5">Submit &amp; track work</p>
-              </div>
-            </a>
-
-            <a href="#student/assignments?tab=notices" class="p-4 rounded-lg bg-white/80 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group">
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[22px]">campaign</span>
-                </div>
-                <span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/35 text-amber-300 font-code text-[11px]">${notices.length}</span>
-              </div>
-              <div>
-                <h3 class="font-headline text-title-md text-[#172B4D]">Notices</h3>
-                <p class="text-body-sm text-[#64748B]/70 text-xs mt-0.5">Campus announcements</p>
+                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Notices</h3>
+                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${notices.length} alerts</p>
               </div>
             </a>
           </div>
@@ -265,52 +300,9 @@ export function renderStudentHome(container) {
           </section>
         ` : ''}
 
-        <!-- Classes & Schedule -->
-        <section>
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="font-headline text-title-lg text-[#172B4D]">Live &amp; Scheduled Classes</h2>
-            <span class="font-code text-label-sm text-neon-purple">${liveClasses.length + timetable.length} Active</span>
-          </div>
-
-          ${liveClasses.length === 0 && timetable.length === 0 ? `
-            <div class="p-5 rounded-lg bg-white/60 border border-dashed border-[#4A90E2]/20 text-center text-xs text-[#64748B]/65">
-              No live or manual classes scheduled yet. Check back once your administrator publishes the timetable.
-            </div>
-          ` : `
-            <div class="space-y-3">
-              ${liveClasses.map((cls) => `
-                <article class="p-4 rounded-lg bg-gradient-to-r from-[#EBF4FF] to-[#E0EFFF] border border-[#4A90E2]/30 space-y-2">
-                  <div class="flex items-start justify-between gap-2">
-                    <div>
-                      <span class="px-2 py-0.5 rounded-full bg-success/20 border border-success/40 text-success text-[11px] font-label inline-flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span> LIVE NOW
-                      </span>
-                      <h3 class="font-headline text-title-md text-[#172B4D] mt-1">${esc(cls.title)}</h3>
-                      <p class="text-xs text-[#64748B]/70">${esc(cls.instructor || '')} ${cls.room ? `• ${esc(cls.room)}` : ''}</p>
-                    </div>
-                    <span class="font-code text-xs text-[#64748B] bg-[#4A90E2]/5 px-2 py-1 rounded border border-[#4A90E2]/10 shrink-0">${esc(cls.timeRange || '')}</span>
-                  </div>
-                  <div class="pt-2 border-t border-glass-border flex justify-end">
-                    <button data-join-live="${esc(cls.id)}" type="button" class="px-3 py-1.5 rounded-md bg-neon-purple hover:bg-electric-violet text-[#172B4D] text-xs font-label flex items-center gap-1">
-                      <span>Join Live</span>
-                      <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </button>
-                  </div>
-                </article>
-              `).join('')}
-
-              ${timetable.slice(0, 4).map((slot) => `
-                <article class="p-3.5 rounded-lg bg-white/70 border border-[#4A90E2]/10 flex items-start justify-between gap-2">
-                  <div>
-                    <span class="font-code text-[11px] text-neon-purple uppercase">${esc(slot.day)} • ${esc(slot.code)}</span>
-                    <h3 class="font-headline text-sm text-[#172B4D] mt-0.5">${esc(slot.title)}</h3>
-                    ${slot.meta ? `<p class="text-xs text-[#64748B]/65 mt-0.5">${esc(slot.meta)}</p>` : ''}
-                  </div>
-                  <span class="font-code text-[11px] text-[#64748B]/80 bg-[#F0F8FF] px-2 py-1 rounded border border-white/10 shrink-0">${esc(slot.slot)}</span>
-                </article>
-              `).join('')}
-            </div>
-          `}
+        <!-- Dynamic Timetable & Scheduled Classes Section -->
+        <section id="timetableDynamicSection" class="space-y-3.5">
+          <!-- Timetable cards dynamically injected by renderTimetableEngine -->
         </section>
 
         <!-- Upcoming Events -->
@@ -332,10 +324,12 @@ export function renderStudentHome(container) {
     </div>
   `;
 
+  // Attach live classroom join buttons
   container.querySelectorAll('[data-join-live]').forEach((btn) => {
     btn.addEventListener('click', () => openLiveClassroomModal(btn.dataset.joinLive));
   });
 
+  // Attach full view timetable modal
   const openTtFull = () => {
     if (!timetableImage) return;
     const ttSrc = timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png';
@@ -354,6 +348,7 @@ export function renderStudentHome(container) {
   container.querySelector('#studentZoomTtBtn')?.addEventListener('click', openTtFull);
   container.querySelector('#studentTtThumb')?.addEventListener('click', openTtFull);
 
+  // Attach notification bell modal
   container.querySelector('#notifBellBtn')?.addEventListener('click', () => {
     openModal(`
       <div class="rounded-2xl bg-white/92 border border-[#4A90E2]/30 overflow-hidden">
@@ -376,391 +371,273 @@ export function renderStudentHome(container) {
       </div>
     `);
   });
-}
 
-/* =========================================================================
-   SCREEN 3: AI CHAT ASSISTANT
-   ========================================================================= */
-let activeChatCourse = 'General';
+  // Dynamic Timetable Engine
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-export function renderAIChat(container, queryParams = {}) {
-  const { chatMessages, settings, timetable } = store.state;
-  const hasGemini = !!store.getGeminiKey();
-  const configuredCourses = ['General'];
-  (settings.departments || []).forEach((d) => {
-    (d.courses || []).forEach((c) => {
-      if (c && !configuredCourses.includes(c)) configuredCourses.push(c);
+  function renderTimetableEngine() {
+    const ist = getISTDateInfo();
+    const isWeekend = ist.day === 'Sat' || ist.day === 'Sun';
+    const activeDay = selectedTimetableDay || (isWeekend ? 'Mon' : ist.day);
+    const isTodayActive = !isWeekend && activeDay.toLowerCase() === ist.day.toLowerCase();
+
+    // Filter periods strictly for active day
+    const daySlots = (timetable || []).filter((s) => (s.day || '').toLowerCase() === activeDay.toLowerCase());
+    daySlots.sort((a, b) => {
+      const pA = parseSlotMinutes(a.slot) || { start: (a.period || 0) * 60 };
+      const pB = parseSlotMinutes(b.slot) || { start: (b.period || 0) * 60 };
+      return pA.start - pB.start;
     });
-  });
-  (timetable || []).forEach((t) => {
-    const label = t.title && !/lunch/i.test(t.title) ? t.title.trim() : '';
-    if (label && !configuredCourses.includes(label)) configuredCourses.push(label);
-  });
-  if (!configuredCourses.includes(activeChatCourse)) activeChatCourse = 'General';
 
-  container.innerHTML = `
-    <div class="student-shell student-shell-frame min-h-screen flex flex-col justify-between relative">
-      <header class="sticky top-0 z-40 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-[#4A90E2]/10 px-4 py-3 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-3">
-          <a href="#student/home" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] transition-all" aria-label="Back">
-            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-          </a>
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_12px_rgba(74,144,226,0.3)]">
-              <span class="material-symbols-outlined text-[20px]">smart_toy</span>
-            </div>
-            <div>
-              <div class="flex items-center gap-1.5">
-                <h1 class="font-headline text-title-md text-[#172B4D]">Live AI Tutor</h1>
-                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-              </div>
-              <p class="font-code text-[11px] text-neon-purple font-medium">${hasGemini ? 'Gemini 2.5 Live' : `Academic Core • ${esc(settings.aiEngineVersion)}`}</p>
-            </div>
-          </div>
-        </div>
+    // Update Hero Banner
+    const heroClock = container.querySelector('#heroClockText');
+    const heroDayDate = container.querySelector('#heroDayDateText');
+    const heroSummary = container.querySelector('#heroPeriodSummaryText');
+    if (heroClock) heroClock.textContent = `${ist.timeStr} IST`;
+    if (heroDayDate) heroDayDate.textContent = ist.dateStr;
 
-        <div class="flex items-center gap-1.5">
-          <select id="chatCourseSelect" class="max-w-[115px] px-2.5 py-1 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 text-[#64748B] font-code text-[11px] focus:border-[#4A90E2] outline-none">
-            ${configuredCourses.map((c) => `<option value="${esc(c)}" ${c === activeChatCourse ? 'selected' : ''}>${esc(c)}</option>`).join('')}
-          </select>
-          <button id="clearChatBtn" type="button" title="Clear Session" class="w-8 h-8 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 text-[#64748B]/70 hover:text-[#172B4D] flex items-center justify-center">
-            <span class="material-symbols-outlined text-[16px]">refresh</span>
-          </button>
-        </div>
-      </header>
-
-      <main id="chatStream" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        ${chatMessages.length === 0 ? `
-          <div class="p-6 rounded-2xl bg-white/80 border border-[#4A90E2]/15 text-center space-y-3 my-6">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-[#4A90E2]/10 border border-[#4A90E2]/30 text-[#4A90E2] flex items-center justify-center">
-              <span class="material-symbols-outlined text-[26px]">auto_awesome</span>
-            </div>
-            <h2 class="font-headline text-title-md text-[#172B4D]">How can I help you study today?</h2>
-            <p class="text-xs text-[#64748B]/70">Select a syllabus subject above (such as LTPSC), ask any academic question, or click Quiz Me.</p>
-            <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
-              <button type="button" id="quizMeQuickBtn" class="px-3.5 py-1.5 rounded-full bg-neon-purple/20 hover:bg-neon-purple/35 border border-[#4A90E2]/35 text-[#172B4D] text-xs font-label inline-flex items-center gap-1.5 transition-colors">
-                <span class="material-symbols-outlined text-[15px] text-neon-purple">quiz</span>
-                <span>Quiz Me (${esc(activeChatCourse)})</span>
-              </button>
-            </div>
-          </div>
-        ` : chatMessages.map((msg) => renderChatBubble(msg)).join('')}
-
-        <div id="typingIndicator" class="hidden flex items-start gap-2.5">
-          <div class="w-7 h-7 rounded-full bg-[#4A90E2]/10 border border-[#4A90E2]/30 flex-shrink-0 flex items-center justify-center text-neon-purple mt-1">
-            <span class="material-symbols-outlined text-[16px] animate-spin">auto_awesome</span>
-          </div>
-          <div class="rounded-2xl rounded-tl-sm px-4 py-3 bg-[#E6F4FF]/90 border border-[#4A90E2]/20 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-neon-purple typing-dot"></span>
-            <span class="w-2 h-2 rounded-full bg-electric-violet typing-dot"></span>
-            <span class="w-2 h-2 rounded-full bg-cyber-lavender typing-dot"></span>
-            <span class="font-code text-[11px] text-[#64748B]/70 ml-1">Thinking…</span>
-          </div>
-        </div>
-      </main>
-
-      <footer class="sticky bottom-0 z-40 bg-white/90 backdrop-blur-xl border-t border-[#4A90E2]/10 p-3">
-        <form id="chatForm" class="flex items-center gap-2">
-          <a href="#student/scan" aria-label="Scan" class="w-11 h-11 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 hover:border-[#4A90E2]/30 text-[#64748B] flex items-center justify-center transition-colors shrink-0">
-            <span class="material-symbols-outlined text-[20px]">add_a_photo</span>
-          </a>
-          <div class="flex-1 relative flex items-center">
-            <input id="chatInput" type="text" placeholder="Ask any study question or equation..." class="w-full pl-3.5 pr-10 py-2.5 rounded-md bg-white/85 border border-[#4A90E2]/25 text-[#172B4D] placeholder-[#64748B]/40 text-body-md focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2]/30/30 outline-none transition-all font-body" />
-            <button id="voiceInputBtn" type="button" aria-label="Voice input" class="absolute right-3 text-[#64748B]/60 hover:text-neon-purple">
-              <span class="material-symbols-outlined text-[20px]">mic</span>
-            </button>
-          </div>
-          <button type="submit" aria-label="Send" class="w-11 h-11 rounded-md bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] text-white flex items-center justify-center shadow-[0_0_18px_rgba(74,144,226,0.5)] active:scale-95 transition-all border border-[#4A90E2]/40 shrink-0">
-            <span class="material-symbols-outlined text-[20px]">send</span>
-          </button>
-        </form>
-      </footer>
-    </div>
-  `;
-
-  const stream = container.querySelector('#chatStream');
-  stream.scrollTop = stream.scrollHeight;
-
-  async function sendPrompt(text) {
-    const clean = text.trim();
-    if (!clean) return;
-    await store.appendChatMessage({ role: 'user', course: activeChatCourse, text: clean });
-    document.getElementById('typingIndicator')?.classList.remove('hidden');
-    await new Promise((r) => setTimeout(r, 450));
-    const reply = await generateTutorReply(clean, activeChatCourse);
-    await store.appendChatMessage({ role: 'ai', course: activeChatCourse, ...reply });
-  }
-
-  container.querySelector('#chatCourseSelect').addEventListener('change', (e) => {
-    activeChatCourse = e.target.value;
-    renderAIChat(container);
-  });
-
-  container.querySelector('#clearChatBtn').addEventListener('click', async () => {
-    await store.clearChat();
-    showToast('Started new AI Tutor session', 'purple');
-  });
-
-  container.querySelector('#chatForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const inp = container.querySelector('#chatInput');
-    const val = inp.value;
-    inp.value = '';
-    await sendPrompt(val);
-  });
-
-  container.querySelector('#quizMeQuickBtn')?.addEventListener('click', () => {
-    sendPrompt(`Generate 3 practice MCQs for ${activeChatCourse}`);
-  });
-
-  container.querySelectorAll('[data-copy-formula]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(btn.dataset.copyFormula);
-        showToast('Copied to clipboard!', 'success');
-      } catch {}
-    });
-  });
-
-  container.querySelector('#voiceInputBtn').addEventListener('click', () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      showToast('Voice dictation is not supported in this browser.', 'warning');
-      return;
+    if (heroSummary) {
+      if (isWeekend) {
+        heroSummary.textContent = `🏖️ Weekend / Campus Holiday • Showing Monday's timetable`;
+      } else if (ist.currentMinutes < 560) {
+        heroSummary.textContent = `🌅 Classes begin at 9:20 AM IST • Period 1 up next in ${560 - ist.currentMinutes}m`;
+      } else if (ist.currentMinutes >= 770 && ist.currentMinutes < 825) {
+        heroSummary.textContent = `🍽️ College Lunch Break (12:50 – 1:45 PM) • Period 5 begins in ${825 - ist.currentMinutes}m`;
+      } else if (ist.currentMinutes >= 990) {
+        heroSummary.textContent = '✨ All 7 periods completed for today! (9:20 AM – 4:30 PM)';
+      } else {
+        const liveSlot = daySlots.find((s) => {
+          const t = parseSlotMinutes(s.slot);
+          return t && ist.currentMinutes >= t.start && ist.currentMinutes < t.end;
+        });
+        if (liveSlot) {
+          const t = parseSlotMinutes(liveSlot.slot);
+          const left = t ? t.end - ist.currentMinutes : 0;
+          heroSummary.textContent = `🟢 LIVE NOW: ${liveSlot.title} • ${left}m remaining`;
+        } else {
+          heroSummary.textContent = `Today's Schedule: ${daySlots.length} Periods Scheduled`;
+        }
+      }
     }
-    const rec = new SR();
-    rec.lang = 'en-US';
-    showToast('Listening…', 'purple');
-    rec.onresult = (ev) => {
-      const transcript = ev.results?.[0]?.[0]?.transcript || '';
-      const inp = container.querySelector('#chatInput');
-      if (inp && transcript) inp.value = transcript;
-    };
-    rec.start();
-  });
 
-  if (queryParams.ask && !window.__consumedAskParam) {
-    window.__consumedAskParam = queryParams.ask;
-    setTimeout(() => {
-      sendPrompt(queryParams.ask);
-      setTimeout(() => { window.__consumedAskParam = null; }, 2000);
-    }, 150);
-  }
-}
+    const host = container.querySelector('#timetableDynamicSection');
+    if (!host) return;
 
-function renderChatBubble(msg) {
-  if (msg.role === 'user') {
-    return `
-      <div class="flex justify-end animate-enter">
-        <div class="max-w-[85%] rounded-2xl rounded-tr-sm p-4 bg-gradient-to-r from-[#4A90E2]/90 to-[#2563EB] text-white shadow-[0_4px_20px_rgba(74,144,226,0.25)] border border-[#4A90E2]/25">
-          <p class="text-body-md whitespace-pre-wrap">${esc(msg.text)}</p>
-          <span class="block text-right font-code text-[10px] text-[#172B4D]/70 mt-1">${esc(msg.time)}</span>
-        </div>
+    // Day Selector Tabs
+    const dayPillsHtml = `
+      <div class="flex items-center justify-between gap-1 overflow-x-auto pb-1 no-scrollbar">
+        <button type="button" data-select-day="today" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${
+          selectedTimetableDay === null || selectedTimetableDay.toLowerCase() === ist.day.toLowerCase()
+            ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
+            : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
+        }">
+          Today (${ist.day})
+        </button>
+        ${daysOfWeek.map((d) => {
+          const isSelected = activeDay.toLowerCase() === d.toLowerCase();
+          const isCurrentDay = d.toLowerCase() === ist.day.toLowerCase();
+          return `
+            <button type="button" data-select-day="${d}" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${
+              isSelected && (selectedTimetableDay !== null || isWeekend)
+                ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
+                : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
+            }">
+              ${d} ${isCurrentDay ? '•' : ''}
+            </button>
+          `;
+        }).join('')}
       </div>
     `;
-  }
-  return `
-    <div class="flex items-start gap-2.5 animate-enter">
-      <div class="w-7 h-7 rounded-full bg-[#4A90E2]/10 border border-[#4A90E2]/30 flex-shrink-0 flex items-center justify-center text-neon-purple mt-1">
-        <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
-      </div>
-      <div class="max-w-[88%] rounded-2xl rounded-tl-sm p-4 bg-white/80 border border-[#4A90E2]/20 backdrop-blur-xl space-y-3">
-        <p class="text-body-md text-[#172B4D] whitespace-pre-wrap">${esc(msg.text)}</p>
-        ${msg.formula ? `
-          <div class="p-3 rounded-lg bg-[#F0F8FF] border border-[#4A90E2]/15 font-code text-xs text-[#64748B] space-y-1 overflow-x-auto">
-            <pre class="text-neon-purple font-semibold whitespace-pre-wrap font-code">${esc(msg.formula)}</pre>
-            ${msg.formulaSub ? `<div class="text-[#172B4D]/60 text-[11px]">${esc(msg.formulaSub)}</div>` : ''}
+
+    // Special state alerts
+    let stateBannerHtml = '';
+    if (isTodayActive) {
+      if (ist.currentMinutes < 560) {
+        stateBannerHtml = `
+          <div class="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-center gap-2.5 text-xs text-blue-700">
+            <span class="material-symbols-outlined text-[20px] text-blue-500 shrink-0">wb_twilight</span>
+            <span>Classes begin at <strong>9:20 AM IST</strong>. Today's first period is UP NEXT.</span>
           </div>
-        ` : ''}
-        ${msg.detailBody ? `<p class="text-body-sm text-[#172B4D]/80 whitespace-pre-wrap">${esc(msg.detailBody)}</p>` : ''}
-        <div class="pt-2 border-t border-glass-border flex items-center justify-between">
-          ${msg.formula ? `
-            <button type="button" data-copy-formula="${esc(msg.formula)}" class="px-2.5 py-1 rounded bg-[#F0F8FF] hover:bg-[#4A90E2]/10 text-[#64748B] hover:text-[#172B4D] border border-glass-border text-xs flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">content_copy</span> Copy
-            </button>
-          ` : '<span></span>'}
-          <span class="font-code text-[10px] text-[#64748B]/50">${esc(msg.time)}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/* =========================================================================
-   SCREEN 4: SCAN & SOLVE
-   ========================================================================= */
-let scanMode = 'Equation';
-let uploadedPreviewUrl = null;
-let uploadedBase64 = null;
-let uploadedMime = 'image/jpeg';
-
-export function renderScanSolve(container) {
-  const enabled = store.state.settings.scanAndSolveEnabled;
-
-  container.innerHTML = `
-    <div class="student-shell student-shell-frame bg-[#F0F8FF] min-h-screen flex flex-col justify-between relative overflow-hidden">
-      <header class="z-40 bg-[#F0F8FF]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-[#4A90E2]/10">
-        <a href="#student/home" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] transition-all">
-          <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-        </a>
-        <div class="flex items-center gap-1 p-1 rounded-full bg-[#E6F4FF] border border-[#4A90E2]/20">
-          ${['Equation', 'Diagram', 'Text OCR'].map((m) => `
-            <button type="button" data-scan-mode="${m}" class="px-3 py-1 rounded-full text-xs font-label transition-all ${
-              scanMode === m ? 'bg-[#4A90E2] text-[#172B4D] shadow-[0_0_10px_rgba(74,144,226,0.3)]' : 'text-[#64748B]/70 hover:text-[#172B4D]'
-            }">${m}</button>
-          `).join('')}
-        </div>
-        <button id="toggleCameraBtn" type="button" title="Toggle Webcam" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-neon-purple">
-          <span class="material-symbols-outlined text-[20px]">videocam</span>
-        </button>
-      </header>
-
-      <main class="flex-1 relative flex flex-col items-center justify-center p-5 gap-3">
-        ${!enabled ? `
-          <div class="p-5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-center space-y-2 max-w-sm">
-            <span class="material-symbols-outlined text-amber-400 text-[32px]">lock</span>
-            <h2 class="font-headline text-title-md text-[#172B4D]">Scan &amp; Solve Paused by Admin</h2>
-            <p class="text-xs text-[#64748B]/75">This feature is currently disabled in College Settings.</p>
-          </div>
-        ` : `
-          <div class="relative w-full max-w-sm aspect-[4/5] rounded-xl border border-[#4A90E2]/25 bg-white/80 overflow-hidden shadow-[0_0_40px_rgba(74,144,226,0.1)] flex flex-col justify-between p-4">
-            <video id="liveCameraVideo" autoplay playsinline muted class="hidden absolute inset-0 w-full h-full object-cover opacity-75"></video>
-            ${uploadedPreviewUrl ? `<img src="${uploadedPreviewUrl}" class="absolute inset-0 w-full h-full object-contain bg-[#172B4D]/80" alt="Uploaded scan" />` : ''}
-
-            <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
-            <div class="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-neon-purple rounded-tl-sm pointer-events-none"></div>
-            <div class="absolute top-3 right-3 w-8 h-8 border-t-2 border-r-2 border-neon-purple rounded-tr-sm pointer-events-none"></div>
-            <div class="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-neon-purple rounded-bl-sm pointer-events-none"></div>
-            <div class="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-neon-purple rounded-br-sm pointer-events-none"></div>
-            <div class="scanner-laser absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-neon-purple to-transparent shadow-[0_0_8px_rgba(74,144,226,0.4)] pointer-events-none"></div>
-
-            <div class="relative z-10 flex items-center justify-between">
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/85 border border-[#4A90E2]/20 font-code text-[11px] text-[#64748B]">
-                <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                ${uploadedPreviewUrl ? 'Image Loaded' : `Mode: ${esc(scanMode)}`}
-              </span>
-            </div>
-
-            <div class="relative z-10 my-auto p-4 rounded-lg bg-white/85 border border-[#4A90E2] shadow-[0_0_25px_rgba(74,144,226,0.2)] backdrop-blur-md space-y-2">
-              <span class="text-label-sm font-code text-neon-purple uppercase tracking-wider flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px]">auto_awesome</span>
-                Enter Equation or Upload Image
-              </span>
-              <input id="scanEquationInput" type="text" placeholder="e.g. x^2 - 5x + 6 = 0 or d/dx(3x^4)" class="w-full font-code text-sm text-[#172B4D] text-center py-2 px-2 bg-[#E6F4FF]/50 rounded border border-white/15 focus:border-[#4A90E2] outline-none" />
-            </div>
-
-            <div class="relative z-10 text-center">
-              <span class="inline-block px-3 py-1 rounded-full bg-white/85 border border-[#4A90E2]/15 text-[#64748B] text-xs">
-                Upload from gallery, enable webcam, or type an equation
-              </span>
-            </div>
-          </div>
-        `}
-      </main>
-
-      <footer class="z-40 bg-white/90 backdrop-blur-xl border-t border-[#4A90E2]/10 px-6 py-5">
-        <input id="galleryFileInput" type="file" accept="image/*" class="hidden" />
-        <div class="flex items-center justify-around max-w-sm mx-auto">
-          <button id="galleryBtn" type="button" class="flex flex-col items-center gap-1 text-[#64748B] hover:text-[#172B4D] group">
-            <div class="w-12 h-12 rounded-lg bg-[#E6F4FF] border border-[#4A90E2]/15 group-hover:border-[#4A90E2]/40 flex items-center justify-center">
-              <span class="material-symbols-outlined text-[24px]">photo_library</span>
-            </div>
-            <span class="text-[11px] font-label">Gallery</span>
-          </button>
-
-          <button id="shutterSolveBtn" type="button" ${!enabled ? 'disabled' : ''} aria-label="Solve" class="w-20 h-20 rounded-full p-1 bg-gradient-to-tr from-[#4A90E2] via-[#64B5F6] to-[#2563EB] shadow-[0_0_30px_rgba(74,144,226,0.5)] active:scale-95 transition-all disabled:opacity-40">
-            <div class="w-full h-full rounded-full border-2 border-white/80 bg-[#F0F8FF] flex items-center justify-center">
-              <span class="material-symbols-outlined text-[#172B4D] text-[32px]">document_scanner</span>
-            </div>
-          </button>
-
-          <a href="#student/chat" class="flex flex-col items-center gap-1 text-[#64748B] hover:text-[#172B4D] group">
-            <div class="w-12 h-12 rounded-lg bg-[#E6F4FF] border border-[#4A90E2]/15 group-hover:border-[#4A90E2]/40 flex items-center justify-center">
-              <span class="material-symbols-outlined text-[24px]">smart_toy</span>
-            </div>
-            <span class="text-[11px] font-label">AI Tutor</span>
-          </a>
-        </div>
-      </footer>
-    </div>
-  `;
-
-  container.querySelectorAll('[data-scan-mode]').forEach((btn) => {
-    btn.addEventListener('click', () => { scanMode = btn.dataset.scanMode; renderScanSolve(container); });
-  });
-
-  container.querySelector('#toggleCameraBtn')?.addEventListener('click', async () => {
-    const video = container.querySelector('#liveCameraVideo');
-    if (!video) return;
-    if (activeCameraStream) {
-      cleanupStudentViews();
-      video.classList.add('hidden');
-      return;
-    }
-    try {
-      activeCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      video.srcObject = activeCameraStream;
-      video.classList.remove('hidden');
-      showToast('Live camera connected!', 'success');
-    } catch {
-      showToast('Camera unavailable — upload an image or enter an equation.', 'warning');
-    }
-  });
-
-  const galleryInput = container.querySelector('#galleryFileInput');
-  container.querySelector('#galleryBtn')?.addEventListener('click', () => galleryInput?.click());
-  galleryInput?.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      uploadedPreviewUrl = reader.result;
-      uploadedMime = file.type || 'image/jpeg';
-      uploadedBase64 = String(reader.result).split(',')[1] || null;
-      showToast(`Loaded "${file.name}"`, 'success');
-      renderScanSolve(container);
-    };
-    reader.readAsDataURL(file);
-  });
-
-  container.querySelector('#shutterSolveBtn')?.addEventListener('click', async () => {
-    const eqVal = container.querySelector('#scanEquationInput')?.value.trim() || '';
-    if (!eqVal && !uploadedBase64) {
-      showToast('Enter an equation or upload an image first.', 'warning');
-      return;
-    }
-    showToast('Solving…', 'purple');
-    const result = await runScanAndSolve({
-      mode: scanMode,
-      equationText: eqVal,
-      imageBase64: uploadedBase64,
-      mimeType: uploadedMime,
-    });
-    openModal(`
-      <div class="rounded-2xl bg-white/92 border border-[#4A90E2]/30 overflow-hidden">
-        <div class="px-5 py-4 border-b border-glass-border bg-[#E6F4FF]/60 flex items-center justify-between">
-          <h3 class="font-headline text-title-lg text-[#172B4D]">${esc(result.detectedType)}</h3>
-          <button data-close-modal class="text-[#64748B] hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <div class="p-5 space-y-4">
-          <div class="p-3 rounded-xl bg-[#F0F8FF] border border-[#4A90E2]/25 font-code text-center text-sm text-[#172B4D]">${esc(result.equation)}</div>
-          <div class="space-y-2">
-            ${result.steps.map((st, idx) => `
-              <div class="p-3 rounded-lg bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-start gap-2.5 text-xs">
-                <span class="w-5 h-5 rounded-full bg-neon-purple/25 text-neon-purple font-code text-[10px] flex items-center justify-center shrink-0">${idx + 1}</span>
-                <span>${esc(st)}</span>
+        `;
+      } else if (ist.currentMinutes >= 770 && ist.currentMinutes < 825) {
+        stateBannerHtml = `
+          <div class="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/35 flex items-center justify-between text-xs text-amber-900">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[22px] text-amber-600">restaurant</span>
+              <div>
+                <p class="font-semibold">🍽️ Lunch Break in Progress (12:50 PM – 1:45 PM)</p>
+                <p class="text-[11px] text-amber-700">Period 5 starts at 1:45 PM IST (${825 - ist.currentMinutes}m remaining)</p>
               </div>
-            `).join('')}
+            </div>
           </div>
-          <div class="p-3.5 rounded-xl bg-success/10 border border-success/40 flex items-center justify-between">
-            <span class="text-xs text-emerald-200">Result</span>
-            <span class="font-code text-sm font-bold text-success">${esc(result.finalAnswer)}</span>
+        `;
+      } else if (ist.currentMinutes >= 990) {
+        stateBannerHtml = `
+          <div class="p-3 rounded-xl bg-slate-500/10 border border-slate-300 flex items-center gap-2.5 text-xs text-slate-700">
+            <span class="material-symbols-outlined text-[20px] text-slate-500 shrink-0">task_alt</span>
+            <span>All 7 college periods for today have finished. See you tomorrow!</span>
           </div>
+        `;
+      }
+    } else if (isWeekend && (selectedTimetableDay === null || selectedTimetableDay === ist.day)) {
+      stateBannerHtml = `
+        <div class="p-4 rounded-xl bg-white/80 border border-dashed border-[#4A90E2]/30 text-center space-y-1">
+          <p class="font-headline text-sm font-semibold text-[#172B4D]">🏖️ Weekend / Campus Holiday</p>
+          <p class="text-xs text-[#64748B]">No classes scheduled for ${ist.day}. Showing Monday's timetable above.</p>
         </div>
+      `;
+    }
+
+    // Render Period Cards
+    let foundNextUpcoming = false;
+    let periodsHtml = '';
+
+    if (daySlots.length === 0) {
+      periodsHtml = `
+        <div class="p-5 rounded-xl bg-white/60 border border-dashed border-[#4A90E2]/25 text-center text-xs text-[#64748B]">
+          No periods scheduled for ${activeDay}.
+        </div>
+      `;
+    } else {
+      periodsHtml = daySlots.map((slot, index) => {
+        const timing = parseSlotMinutes(slot.slot);
+        let badgeHtml = '';
+        let cardStyle = 'bg-white/85 border border-[#4A90E2]/15 shadow-sm';
+        let countdownInfo = '';
+
+        if (isTodayActive && timing) {
+          if (ist.currentMinutes >= timing.start && ist.currentMinutes < timing.end) {
+            // LIVE NOW
+            const left = timing.end - ist.currentMinutes;
+            badgeHtml = `
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 font-label text-[11px] font-semibold inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                LIVE NOW
+              </span>
+            `;
+            countdownInfo = `<span class="font-code text-xs text-emerald-600 font-semibold">${left}m left</span>`;
+            cardStyle = 'bg-gradient-to-r from-emerald-50/95 via-white to-emerald-50/50 border-2 border-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.2)] ring-2 ring-emerald-500/20';
+          } else if (ist.currentMinutes >= timing.end) {
+            // COMPLETED
+            badgeHtml = `
+              <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-400 font-code text-[10px] inline-flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                COMPLETED
+              </span>
+            `;
+            cardStyle = 'bg-white/60 border border-slate-200/80 opacity-70';
+          } else if (ist.currentMinutes < timing.start) {
+            if (!foundNextUpcoming) {
+              foundNextUpcoming = true;
+              // UP NEXT
+              const startsIn = timing.start - ist.currentMinutes;
+              badgeHtml = `
+                <span class="px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/35 text-blue-600 font-label text-[11px] font-semibold inline-flex items-center gap-1 shadow-sm">
+                  <span class="material-symbols-outlined text-xs">schedule</span>
+                  UP NEXT
+                </span>
+              `;
+              countdownInfo = `<span class="font-code text-xs text-blue-600 font-medium">Starts in ${startsIn}m</span>`;
+              cardStyle = 'bg-gradient-to-r from-blue-50/90 via-white to-blue-50/40 border border-blue-500/40 shadow-sm';
+            } else {
+              // UPCOMING
+              badgeHtml = `
+                <span class="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 font-code text-[10px]">
+                  UPCOMING
+                </span>
+              `;
+              cardStyle = 'bg-white/85 border border-[#4A90E2]/15';
+            }
+          }
+        } else {
+          badgeHtml = `
+            <span class="px-2 py-0.5 rounded-full bg-[#E6F4FF] border border-[#4A90E2]/20 text-neon-purple font-code text-[10px]">
+              PERIOD ${slot.period || (index + 1)}
+            </span>
+          `;
+        }
+
+        // Insert Lunch Break separator after Period 4
+        let lunchBreakSeparator = '';
+        if (slot.period === 4 || index === 3) {
+          const isLunchNow = isTodayActive && ist.currentMinutes >= 770 && ist.currentMinutes < 825;
+          lunchBreakSeparator = `
+            <div class="my-2 p-2.5 rounded-lg ${isLunchNow ? 'bg-amber-100/90 border border-amber-400 shadow-sm' : 'bg-[#F0F8FF] border border-glass-border'} flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 font-medium ${isLunchNow ? 'text-amber-900 font-semibold' : 'text-[#64748B]'}">
+                <span class="material-symbols-outlined text-base ${isLunchNow ? 'text-amber-600 animate-bounce' : 'text-[#64748B]'}">restaurant</span>
+                Lunch Break
+              </span>
+              <span class="font-code text-[11px] ${isLunchNow ? 'text-amber-800 font-semibold' : 'text-[#64748B]/70'}">12:50 PM – 1:45 PM</span>
+            </div>
+          `;
+        }
+
+        return `
+          <article class="p-4 rounded-xl ${cardStyle} transition-all space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  ${badgeHtml}
+                  <span class="font-code text-[11px] text-neon-purple font-medium uppercase">${esc(slot.day)} • ${esc(slot.code || '')}</span>
+                  ${countdownInfo}
+                </div>
+                <h3 class="font-headline text-sm font-semibold text-[#172B4D] leading-tight">${esc(slot.title)}</h3>
+                <p class="text-xs text-[#64748B] mt-1">${esc(slot.instructor || '')} ${slot.room ? `• <span class="font-medium text-[#172B4D]/75">${esc(slot.room)}</span>` : ''}</p>
+              </div>
+              <span class="font-code text-xs text-[#172B4D] bg-[#F0F8FF] px-2.5 py-1 rounded-md border border-glass-border shrink-0 font-medium">
+                ${esc(slot.slot)}
+              </span>
+            </div>
+          </article>
+          ${lunchBreakSeparator}
+        `;
+      }).join('');
+    }
+
+    host.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-headline text-title-lg text-[#172B4D]">Live &amp; Scheduled Classes</h2>
+          <p class="text-xs text-[#64748B]">${activeDay}'s Schedule • ${daySlots.length} Periods</p>
+        </div>
+        <span class="font-code text-xs px-2.5 py-1 rounded-full bg-[#E6F4FF] text-neon-purple border border-[#4A90E2]/20 font-medium">
+          ${isTodayActive ? 'Today' : activeDay}
+        </span>
       </div>
-    `);
-  });
+
+      ${dayPillsHtml}
+      ${stateBannerHtml}
+      <div class="space-y-3">
+        ${periodsHtml}
+      </div>
+    `;
+
+    // Attach Day selector listeners
+    host.querySelectorAll('[data-select-day]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.selectDay;
+        selectedTimetableDay = d === 'today' ? null : d;
+        renderTimetableEngine();
+      });
+    });
+  }
+
+  // Initial render of timetable engine
+  renderTimetableEngine();
+
+  // Periodic real-time update every 15 seconds without full page reload
+  if (timetableLiveTimer) clearInterval(timetableLiveTimer);
+  timetableLiveTimer = setInterval(() => {
+    renderTimetableEngine();
+  }, 15000);
 }
+
+// AI Tutor feature removed per specification
+
+// Scan & Solve feature removed per specification
 
 /* =========================================================================
    SCREEN 5: STUDY MATERIALS VAULT (100% REAL ADMIN UPLOADS ONLY)
@@ -1104,7 +981,6 @@ export function renderAssignmentsNotices(container, queryParams = {}) {
 export function renderStudentProfile(container) {
   const student = getStudentOrPrompt(container);
   if (!student) return;
-  const savedKey = store.getGeminiKey();
 
   container.innerHTML = `
     <div class="student-shell student-shell-frame pb-28 min-h-screen">
@@ -1146,22 +1022,6 @@ export function renderStudentProfile(container) {
               <span class="text-[#172B4D] font-semibold block mt-0.5">${esc(student.year)} • ${esc(student.section)}</span>
             </div>
           </div>
-        </section>
-
-        <section class="p-5 rounded-xl bg-white/75 border border-[#4A90E2]/20 space-y-3">
-          <div class="flex items-center justify-between border-b border-glass-border pb-2.5">
-            <div>
-              <h3 class="font-headline text-title-md text-[#172B4D]">Live Gemini AI Connector</h3>
-              <p class="text-[11px] text-[#64748B]/65">Optional: connect your Gemini API key for live cloud AI</p>
-            </div>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-code ${savedKey ? 'bg-success/20 text-success' : 'bg-[#E6F4FF] text-[#64748B]/70'}">
-              ${savedKey ? 'LIVE KEY SET' : 'LOCAL ENGINE'}
-            </span>
-          </div>
-          <form id="geminiKeyForm" class="flex items-center gap-2">
-            <input id="geminiKeyInput" type="password" value="${esc(savedKey)}" placeholder="AIzaSy... (stored locally)" class="flex-1 px-3 py-2 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-xs font-code outline-none" />
-            <button type="submit" class="px-3.5 py-2 rounded-lg bg-[#4A90E2] text-white text-xs font-label">Save</button>
-          </form>
         </section>
 
         <section class="p-5 rounded-xl bg-white/75 border border-glass-border space-y-4">
@@ -1216,14 +1076,6 @@ export function renderStudentProfile(container) {
       showToast('Profile photo updated!', 'success');
     };
     reader.readAsDataURL(file);
-  });
-
-  container.querySelector('#geminiKeyForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const key = container.querySelector('#geminiKeyInput').value.trim();
-    store.setGeminiKey(key);
-    showToast(key ? 'Live Gemini API key connected!' : 'Using local Academic AI engine.', 'success');
-    renderStudentProfile(container);
   });
 
   container.querySelector('#updatePwdForm').addEventListener('submit', async (e) => {

@@ -154,16 +154,10 @@ export function renderStudentBottomNav(activeRoute) {
 
   return `
     <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-50 bg-white/85 backdrop-blur-xl border-t border-[#4A90E2]/10 px-4 py-2.5 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-      <div class="flex items-center justify-around">
+      <div class="grid grid-cols-4 items-center text-center">
         ${item('student/home', 'home', 'Home')}
-        ${item('student/chat', 'smart_toy', 'AI Tutor')}
-        <a href="#student/scan" class="relative -top-5 flex flex-col items-center group" title="Scan & Solve">
-          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#4A90E2] to-[#64B5F6] flex items-center justify-center text-white shadow-[0_0_24px_rgba(74,144,226,0.5)] group-hover:scale-110 active:scale-95 transition-transform border-2 border-white">
-            <span class="material-symbols-outlined text-[26px]">document_scanner</span>
-          </div>
-          <span class="text-[10px] font-label font-medium text-[#64748B] -mt-0.5">Scan</span>
-        </a>
         ${item('student/vault', 'menu_book', 'Vault')}
+        ${item('student/assignments', 'campaign', 'Notices')}
         ${item('student/profile', 'person', 'Profile')}
       </div>
     </nav>
