@@ -326,6 +326,17 @@ export async function downloadFromUrl(url, filename) {
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     return true;
   } catch {
+    // If cross-origin fetch fails (CORS), proxy through backend download endpoint for native attachment
+    if (!url.startsWith('/api/download')) {
+      const proxyUrl = `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(filename || 'download')}`;
+      const a = document.createElement('a');
+      a.href = proxyUrl;
+      a.download = filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return true;
+    }
     const a = document.createElement('a');
     a.href = url;
     a.download = filename || 'download';

@@ -156,7 +156,7 @@ async function supabaseGetSession(token) {
 async function supabaseCreateSession(role, userId, name, token) {
   const sb = getSupabase();
   if (!token) token = generateToken(); // fallback if not provided
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   if (sb) {
     try {
       await sb.from('app_sessions').insert({
@@ -933,6 +933,62 @@ module.exports = async function handler(req, res) {
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: err?.message || 'Failed to create upload URL' });
       }
+    }
+
+    // 1e. Robust File Download Endpoint — GET /api/download?id=<matId> or ?url=<fileUrl>&name=<fileName>
+    if (reqPath === '/api/download') {
+      if (method !== 'GET') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      const queryParams = new URL(req.url || '', 'http://localhost').searchParams;
+      const matId = String(queryParams.get('id') || '').trim();
+      let fileUrl = String(queryParams.get('url') || '').trim();
+      let filename = String(queryParams.get('name') || '').trim();
+      let mimeType = 'application/octet-stream';
+      let buffer = null;
+
+      if (matId) {
+        const mat = (db.materials || []).find((m) => m && m.id === matId);
+        if (mat) {
+          filename = filename || mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
+          mimeType = mat.mimeType || 'application/pdf';
+          fileUrl = fileUrl || mat.fileUrl || '';
+          if (mat.fileDataUrl && mat.fileDataUrl.includes('base64,')) {
+            try {
+              const base64Data = mat.fileDataUrl.split('base64,')[1];
+              buffer = Buffer.from(base64Data, 'base64');
+            } catch {}
+          }
+        }
+      }
+
+      // If we don't have buffer yet but have fileUrl (e.g. Supabase Storage URL)
+      if (!buffer && fileUrl) {
+        try {
+          const fetchRes = await fetch(fileUrl);
+          if (fetchRes.ok) {
+            const arrayBuf = await fetchRes.arrayBuffer();
+            buffer = Buffer.from(arrayBuf);
+            if (fetchRes.headers.get('content-type')) {
+              mimeType = fetchRes.headers.get('content-type');
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('[Download] Proxy fetch error:', fetchErr?.message);
+        }
+      }
+
+      if (!buffer) {
+        return sendJson(res, 404, { ok: false, error: 'File not found or unavailable' });
+      }
+
+      const safeName = (filename || 'download').replace(/["\r\n]/g, '_');
+      res.writeHead(200, {
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(safeName)}"; filename*=UTF-8''${encodeURIComponent(safeName)}`,
+        'Content-Length': buffer.length,
+        'Cache-Control': 'public, max-age=86400',
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(buffer);
     }
 
     // 2. Version

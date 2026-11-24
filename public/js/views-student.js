@@ -401,8 +401,8 @@ export function renderStudentHome(container) {
         heroSummary.textContent = `🏖️ Weekend / Campus Holiday • Showing Monday's timetable`;
       } else if (ist.currentMinutes < 560) {
         heroSummary.textContent = `🌅 Classes begin at 9:20 AM IST • Period 1 up next in ${560 - ist.currentMinutes}m`;
-      } else if (ist.currentMinutes >= 770 && ist.currentMinutes < 825) {
-        heroSummary.textContent = `🍽️ College Lunch Break (12:50 – 1:45 PM) • Period 5 begins in ${825 - ist.currentMinutes}m`;
+      } else if (ist.currentMinutes >= 720 && ist.currentMinutes < 770) {
+        heroSummary.textContent = `🍽️ College Lunch Break (12:00 – 12:50 PM) • Regular class begins at 12:50 PM (${770 - ist.currentMinutes}m remaining)`;
       } else if (ist.currentMinutes >= 990) {
         heroSummary.textContent = '✨ All 7 periods completed for today! (9:20 AM – 4:30 PM)';
       } else {
@@ -459,14 +459,14 @@ export function renderStudentHome(container) {
             <span>Classes begin at <strong>9:20 AM IST</strong>. Today's first period is UP NEXT.</span>
           </div>
         `;
-      } else if (ist.currentMinutes >= 770 && ist.currentMinutes < 825) {
+      } else if (ist.currentMinutes >= 720 && ist.currentMinutes < 770) {
         stateBannerHtml = `
           <div class="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/35 flex items-center justify-between text-xs text-amber-900">
             <div class="flex items-center gap-2.5">
               <span class="material-symbols-outlined text-[22px] text-amber-600">restaurant</span>
               <div>
-                <p class="font-semibold">🍽️ Lunch Break in Progress (12:50 PM – 1:45 PM)</p>
-                <p class="text-[11px] text-amber-700">Period 5 starts at 1:45 PM IST (${825 - ist.currentMinutes}m remaining)</p>
+                <p class="font-semibold">🍽️ Lunch Break in Progress (12:00 PM – 12:50 PM)</p>
+                <p class="text-[11px] text-amber-700">Regular class starts at 12:50 PM IST (${770 - ist.currentMinutes}m remaining)</p>
               </div>
             </div>
           </div>
@@ -560,22 +560,91 @@ export function renderStudentHome(container) {
           `;
         }
 
-        // Insert Lunch Break separator after Period 4
-        let lunchBreakSeparator = '';
+        // Insert Lunch Break Timeline Item (12:00 PM – 12:50 PM) in chronological order right before Period 4
+        let lunchTimelineItem = '';
         if (slot.period === 4 || index === 3) {
-          const isLunchNow = isTodayActive && ist.currentMinutes >= 770 && ist.currentMinutes < 825;
-          lunchBreakSeparator = `
-            <div class="my-2 p-2.5 rounded-lg ${isLunchNow ? 'bg-amber-100/90 border border-amber-400 shadow-sm' : 'bg-[#F0F8FF] border border-glass-border'} flex items-center justify-between text-xs">
-              <span class="flex items-center gap-2 font-medium ${isLunchNow ? 'text-amber-900 font-semibold' : 'text-[#64748B]'}">
-                <span class="material-symbols-outlined text-base ${isLunchNow ? 'text-amber-600 animate-bounce' : 'text-[#64748B]'}">restaurant</span>
-                Lunch Break
+          let lunchCardStyle = 'bg-white/85 border border-[#4A90E2]/15 shadow-sm';
+          let lunchBadgeHtml = '';
+          let lunchCountdown = '';
+
+          if (isTodayActive) {
+            if (ist.currentMinutes >= 720 && ist.currentMinutes < 770) {
+              const left = 770 - ist.currentMinutes;
+              lunchBadgeHtml = `
+                <span class="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-700 font-label text-[11px] font-semibold inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                  LUNCH IN PROGRESS
+                </span>
+              `;
+              lunchCountdown = `<span class="font-code text-xs text-amber-700 font-semibold">${left}m left</span>`;
+              lunchCardStyle = 'bg-gradient-to-r from-amber-50/95 via-white to-amber-50/50 border-2 border-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.2)] ring-2 ring-amber-500/20';
+            } else if (ist.currentMinutes >= 770) {
+              lunchBadgeHtml = `
+                <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-400 font-code text-[10px] inline-flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[13px]">check_circle</span>
+                  COMPLETED
+                </span>
+              `;
+              lunchCardStyle = 'bg-white/60 border border-slate-200/80 opacity-70';
+            } else if (ist.currentMinutes < 720) {
+              if (!foundNextUpcoming && ist.currentMinutes >= 670) {
+                foundNextUpcoming = true;
+                const startsIn = 720 - ist.currentMinutes;
+                lunchBadgeHtml = `
+                  <span class="px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/35 text-blue-600 font-label text-[11px] font-semibold inline-flex items-center gap-1 shadow-sm">
+                    <span class="material-symbols-outlined text-xs">schedule</span>
+                    UP NEXT
+                  </span>
+                `;
+                lunchCountdown = `<span class="font-code text-xs text-blue-600 font-medium">Starts in ${startsIn}m</span>`;
+                lunchCardStyle = 'bg-gradient-to-r from-blue-50/90 via-white to-blue-50/40 border border-blue-500/40 shadow-sm';
+              } else {
+                lunchBadgeHtml = `
+                  <span class="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 font-code text-[10px]">
+                    UPCOMING
+                  </span>
+                `;
+                lunchCardStyle = 'bg-white/85 border border-[#4A90E2]/15';
+              }
+            }
+          } else {
+            lunchBadgeHtml = `
+              <span class="px-2 py-0.5 rounded-full bg-[#E6F4FF] border border-[#4A90E2]/20 text-neon-purple font-code text-[10px]">
+                SCHEDULED BREAK
               </span>
-              <span class="font-code text-[11px] ${isLunchNow ? 'text-amber-800 font-semibold' : 'text-[#64748B]/70'}">12:50 PM – 1:45 PM</span>
-            </div>
+            `;
+          }
+
+          lunchTimelineItem = `
+            <article class="p-4 rounded-xl ${lunchCardStyle} transition-all space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    ${lunchBadgeHtml}
+                    <span class="font-code text-[11px] text-amber-600 font-medium uppercase">BREAK • CAMPUS DINING</span>
+                    ${lunchCountdown}
+                  </div>
+                  <h3 class="font-headline text-sm font-semibold text-[#172B4D] leading-tight flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-amber-500">restaurant</span>
+                    Lunch Break
+                  </h3>
+                  <p class="text-xs text-[#64748B] mt-1">College Cafeteria &amp; Dining Hall • Regular class resumes at 12:50 PM</p>
+                </div>
+                <span class="font-code text-xs text-[#172B4D] bg-[#F0F8FF] px-2.5 py-1 rounded-md border border-glass-border shrink-0 font-medium">
+                  12:00 PM – 12:50 PM
+                </span>
+              </div>
+            </article>
           `;
         }
 
+        const displaySlot = (slot.slot === '12:50 - 13:45') ? '12:50 PM – 1:45 PM' : esc(slot.slot);
+
         return `
+          ${lunchTimelineItem}
           <article class="p-4 rounded-xl ${cardStyle} transition-all space-y-2">
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
@@ -588,11 +657,10 @@ export function renderStudentHome(container) {
                 <p class="text-xs text-[#64748B] mt-1">${esc(slot.instructor || '')} ${slot.room ? `• <span class="font-medium text-[#172B4D]/75">${esc(slot.room)}</span>` : ''}</p>
               </div>
               <span class="font-code text-xs text-[#172B4D] bg-[#F0F8FF] px-2.5 py-1 rounded-md border border-glass-border shrink-0 font-medium">
-                ${esc(slot.slot)}
+                ${displaySlot}
               </span>
             </div>
           </article>
-          ${lunchBreakSeparator}
         `;
       }).join('');
     }
@@ -758,14 +826,18 @@ export function renderStudyVault(container) {
       if (!mat) return;
       showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
       try {
-        if (mat.fileUrl) {
-          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+        const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
+        if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
+          const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
+          await downloadFromUrl(dlUrl, targetFilename);
+        } else if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, targetFilename);
         } else if (mat.fileDataUrl) {
-          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+          downloadDataUrl(targetFilename, mat.fileDataUrl);
         } else {
           downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n${mat.courseTag}\n\n${mat.summary || ''}\n`);
         }
-        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+        showToast(`Downloaded "${targetFilename}"`, 'success');
       } catch (err) {
         showToast('Download failed. Please try again.', 'error');
       }
@@ -799,14 +871,18 @@ export function renderStudyVault(container) {
         host.querySelector('#modalDlMatBtn')?.addEventListener('click', async () => {
           showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
           try {
-            if (mat.fileUrl) {
-              await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+            const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
+            if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
+              const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
+              await downloadFromUrl(dlUrl, targetFilename);
+            } else if (mat.fileUrl) {
+              await downloadFromUrl(mat.fileUrl, targetFilename);
             } else if (mat.fileDataUrl) {
-              downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+              downloadDataUrl(targetFilename, mat.fileDataUrl);
             } else {
               downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
             }
-            showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+            showToast(`Downloaded "${targetFilename}"`, 'success');
           } catch {
             showToast('Download failed. Please try again.', 'error');
           }

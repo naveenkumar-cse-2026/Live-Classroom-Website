@@ -1745,14 +1745,18 @@ export function renderAdminResources(container) {
       if (!mat) return;
       showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
       try {
-        if (mat.fileUrl) {
-          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+        const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
+        if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
+          const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
+          await downloadFromUrl(dlUrl, targetFilename);
+        } else if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, targetFilename);
         } else if (mat.fileDataUrl) {
-          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+          downloadDataUrl(targetFilename, mat.fileDataUrl);
         } else {
           downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
         }
-        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+        showToast(`Downloaded "${targetFilename}"`, 'success');
       } catch {
         showToast('Download failed. Please try again.', 'error');
       }
@@ -2005,6 +2009,17 @@ function openEventModal(existing = null) {
 export function renderAdminTimetable(container) {
   const { timetable, timetableImage, events } = store.state;
   const uniqueSlots = [...new Set(timetable.map((t) => t.slot).filter(Boolean))];
+  uniqueSlots.sort((a, b) => {
+    const parse = (s) => {
+      const match = s.match(/(\d+):(\d+)/);
+      if (!match) return 0;
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      if (h >= 1 && h <= 6) h += 12;
+      return h * 60 + m;
+    };
+    return parse(a) - parse(b);
+  });
 
   container.innerHTML = `
     <div class="min-h-screen flex">

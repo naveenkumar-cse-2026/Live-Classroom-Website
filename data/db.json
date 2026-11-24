@@ -47,7 +47,7 @@
       "hasAttachment": false
     }
   ],
-  "revision": 199,
+  "revision": 201,
   "settings": {
     "domain": "mahendra.info",
     "address": "Tiruchengode - Salem Main Rd, Mahendhirapuri, Mallasamudram West, Tamil Nadu 637503",
@@ -352,7 +352,7 @@
       "id": "tt-mon-p4",
       "day": "Mon",
       "period": 4,
-      "slot": "12:00 - 12:50",
+      "slot": "12:50 - 13:45",
       "code": "26ENT101",
       "title": "ENGLISH LANGUAGE PROFICIENCY",
       "instructor": "Mr.T.Manivasagam,AP/Eng",
@@ -450,7 +450,7 @@
       "id": "tt-tue-p4",
       "day": "Tue",
       "period": 4,
-      "slot": "12:00 - 12:50",
+      "slot": "12:50 - 13:45",
       "code": "26ENT101",
       "title": "ENGLISH LANGUAGE PROFICIENCY",
       "instructor": "Mr.T.Manivasagam,AP/Eng",
@@ -548,7 +548,7 @@
       "id": "tt-wed-p4",
       "day": "Wed",
       "period": 4,
-      "slot": "12:00 - 12:50",
+      "slot": "12:50 - 13:45",
       "code": "26CYM003",
       "title": "INTRODUCTION TO INDIAN KNOWLEDGE SYSTEM",
       "instructor": "Dr.P.Dhanakodi,ASP/Chem",
@@ -646,7 +646,7 @@
       "id": "tt-thu-p4",
       "day": "Thu",
       "period": 4,
-      "slot": "12:00 - 12:50",
+      "slot": "12:50 - 13:45",
       "code": "26CYM003",
       "title": "INTRODUCTION TO INDIAN KNOWLEDGE SYSTEM",
       "instructor": "Dr.P.Dhanakodi,ASP/Chem",
@@ -744,7 +744,7 @@
       "id": "tt-fri-p4",
       "day": "Fri",
       "period": 4,
-      "slot": "12:00 - 12:50",
+      "slot": "12:50 - 13:45",
       "code": "LIB",
       "title": "LIBRARY",
       "instructor": "Dr.R.Suresh,AP/Tamil",
@@ -797,7 +797,7 @@
       "meta": "Classroom • Ms.C.Sangeetha,AP/Maths"
     }
   ],
-  "updatedAt": "2026-11-24T16:52:05.398Z",
+  "updatedAt": "2026-11-24T17:45:31.464Z",
   "activityLog": [
     {
       "id": "act-1795535686461",
@@ -996,9 +996,11 @@
   ],
   "emergencyAlert": null,
   "timetableImage": {
-    "caption": "",
+    "caption": "Official College Timetable (Mon-Fri 9:20 AM - 4:30 PM)",
     "dataUrl": "",
-    "fileName": "file_0000000030b881fa95a3cd18c4d1d14a.png",
+    "fileName": "college-timetable.png",
+    "url": "/assets/college-timetable.png",
+    "fallbackUrl": "/assets/college-timetable.png",
     "uploadedAt": "2026-11-24T15:54:46.461Z"
   }
 }
