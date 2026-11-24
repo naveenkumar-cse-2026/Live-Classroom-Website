@@ -2,6 +2,16 @@
   "events": [],
   "notices": [
     {
+      "id": "not-1795533862321",
+      "body": "WELCOME TO MAHENDRA",
+      "title": "HELLO EVERYONE",
+      "category": "OFFICIAL NOTICE",
+      "tagColor": "purple",
+      "createdAt": "2026-11-24T15:24:22.321Z",
+      "timeLabel": "08:54 PM",
+      "hasAttachment": false
+    },
+    {
       "id": "not-e2e-1795454252506",
       "body": "This notice was saved and verified to persist after refresh.",
       "date": "23/11/2026",
@@ -37,7 +47,7 @@
       "hasAttachment": false
     }
   ],
-  "revision": 194,
+  "revision": 198,
   "settings": {
     "domain": "mahendra.info",
     "address": "Tiruchengode - Salem Main Rd, Mahendhirapuri, Mallasamudram West, Tamil Nadu 637503",
@@ -80,6 +90,28 @@
     "scanAndSolveEnabled": true
   },
   "students": [
+    {
+      "id": "stu-1795533855868",
+      "cgpa": "-",
+      "name": "HARISH",
+      "year": "Year 1",
+      "email": "harish@gmail.com",
+      "phone": "1234567890",
+      "regNo": "12345",
+      "status": "Active",
+      "aiScore": "-",
+      "program": "",
+      "section": "Sec A",
+      "initials": "HA",
+      "semester": "Semester 1",
+      "attendance": 0,
+      "department": "CSE",
+      "hasLoggedIn": true,
+      "lastLoginAt": "2026-11-24T15:24:15.868Z",
+      "aiProvisioned": true,
+      "avatarDataUrl": "",
+      "creditsCleared": "-"
+    },
     {
       "id": "stu-1795532847331",
       "cgpa": "-",
@@ -254,7 +286,25 @@
       "onlineStudents": 0
     }
   ],
-  "materials": [],
+  "materials": [
+    {
+      "id": "mat-1795533755977",
+      "meta": "LTPSC QB - Unit 1-5.pdf • 4.06 MB",
+      "size": "0.91 MB",
+      "type": "pdf",
+      "title": "LTPSC QB - Unit 1-5",
+      "author": "Naveen Kumar",
+      "course": "LTPSC",
+      "fileUrl": "https://cbjzqpaoekawzkntqykx.supabase.co/storage/v1/object/public/classroom-assets/materials/LTPSC_QB_Unit_1-5.pdf",
+      "summary": "STUDY WELL",
+      "fileName": "LTPSC QB - Unit 1-5.pdf",
+      "mimeType": "application/pdf",
+      "verified": true,
+      "courseTag": "LTPSC • CSE",
+      "uploadedAt": "08:52 PM",
+      "fileDataUrl": ""
+    }
+  ],
   "timetable": [
     {
       "id": "tt-migrated-1-1795014936970",
@@ -322,12 +372,32 @@
       "instructor": "Mr.M.Sri vina ,AP/CSE"
     }
   ],
-  "updatedAt": "2026-11-24T15:19:57.136Z",
+  "updatedAt": "2026-11-24T15:54:48.441Z",
   "activityLog": [
     {
+      "id": "act-1795535686461",
+      "text": "Uploaded official college timetable image (file_0000000030b881fa95a3cd18c4d1d14a.png)",
+      "time": "2026-11-24T15:54:46.461Z"
+    },
+    {
+      "id": "act-1795533862321",
+      "text": "Published notice: HELLO EVERYONE",
+      "time": "2026-11-24T15:24:22.321Z"
+    },
+    {
+      "id": "act-1795533857223",
+      "text": "Registered student HARISH (12345)",
+      "time": "2026-11-24T15:24:17.223Z"
+    },
+    {
+      "id": "act-1795533755977",
+      "text": "Uploaded study material: LTPSC QB - Unit 1-5",
+      "time": "2026-11-24T15:22:35.977Z"
+    },
+    {
       "id": "act-1795533597136",
-      "time": "2026-11-24T15:19:57.136Z",
-      "text": "Administrator Naveen Kumar signed in"
+      "text": "Administrator Naveen Kumar signed in",
+      "time": "2026-11-24T15:19:57.136Z"
     },
     {
       "id": "act-1795533345607",
@@ -453,26 +523,6 @@
       "id": "act-1795454834771",
       "text": "Administrator Naveen Kumar signed in",
       "time": "2026-11-23T17:27:14.771Z"
-    },
-    {
-      "id": "act-1795454828546",
-      "text": "Administrator Naveen Kumar signed in",
-      "time": "2026-11-23T17:27:08.546Z"
-    },
-    {
-      "id": "act-1795454747754",
-      "text": "Administrator Naveen Kumar signed in",
-      "time": "2026-11-23T17:25:47.754Z"
-    },
-    {
-      "id": "act-1795454244905",
-      "text": "Administrator Naveen Kumar signed in",
-      "time": "2026-11-23T17:17:24.905Z"
-    },
-    {
-      "id": "act-1795453730538",
-      "text": "Administrator Naveen Kumar signed in",
-      "time": "2026-11-23T17:08:50.538Z"
     }
   ],
   "assignments": [],
@@ -523,7 +573,7 @@
   "timetableImage": {
     "caption": "",
     "dataUrl": "",
-    "fileName": "file_00000000aca88211ab4df3171042c0c8 (1).png",
-    "uploadedAt": "2026-11-24T13:21:06.950Z"
+    "fileName": "file_0000000030b881fa95a3cd18c4d1d14a.png",
+    "uploadedAt": "2026-11-24T15:54:46.461Z"
   }
 }

@@ -9,6 +9,7 @@ import {
   renderSyncPill,
   downloadTextFile,
   downloadDataUrl,
+  downloadFromUrl,
 } from './ui.js';
 
 let activeCameraStream = null;
@@ -260,7 +261,7 @@ export function renderStudentHome(container) {
               </h2>
               <button id="studentZoomTtBtn" type="button" class="text-xs font-code text-neon-purple hover:underline">Full View</button>
             </div>
-            <img id="studentTtThumb" src="${timetableImage.dataUrl}" alt="College Timetable" class="w-full h-auto rounded-lg border border-glass-border cursor-pointer object-contain bg-[#E6F4FF]" />
+            <img id="studentTtThumb" src="${timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png'}" alt="College Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="w-full h-auto rounded-lg border border-glass-border cursor-pointer object-contain bg-[#E6F4FF]" />
           </section>
         ` : ''}
 
@@ -337,6 +338,7 @@ export function renderStudentHome(container) {
 
   const openTtFull = () => {
     if (!timetableImage) return;
+    const ttSrc = timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png';
     openModal(`
       <div class="rounded-2xl bg-white/92 border border-[#4A90E2]/30 overflow-hidden">
         <div class="px-5 py-3 border-b border-glass-border flex items-center justify-between">
@@ -344,7 +346,7 @@ export function renderStudentHome(container) {
           <button type="button" data-close-modal class="text-[#64748B] hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-3 max-h-[82vh] overflow-auto flex justify-center bg-[#E6F4FF]">
-          <img src="${timetableImage.dataUrl}" alt="Full Timetable" class="max-w-none sm:max-w-full h-auto object-contain" />
+          <img src="${ttSrc}" alt="Full Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="max-w-none sm:max-w-full h-auto object-contain" />
         </div>
       </div>
     `, null, 'max-w-6xl');
@@ -873,16 +875,23 @@ export function renderStudyVault(container) {
   });
 
   container.querySelectorAll('[data-download-mat]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const mat = materials.find((x) => x.id === btn.dataset.downloadMat);
       if (!mat) return;
-      if (mat.fileDataUrl) {
-        downloadDataUrl(mat.fileName || mat.title, mat.fileDataUrl);
-      } else {
-        downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n${mat.courseTag}\n\n${mat.summary || ''}\n`);
+      showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
+      try {
+        if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+        } else if (mat.fileDataUrl) {
+          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+        } else {
+          downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n${mat.courseTag}\n\n${mat.summary || ''}\n`);
+        }
+        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+      } catch (err) {
+        showToast('Download failed. Please try again.', 'error');
       }
-      showToast(`Downloaded "${mat.title}"`, 'success');
     });
   });
 
@@ -910,9 +919,20 @@ export function renderStudyVault(container) {
           </div>
         </div>
       `, (host) => {
-        host.querySelector('#modalDlMatBtn')?.addEventListener('click', () => {
-          if (mat.fileDataUrl) downloadDataUrl(mat.fileName || mat.title, mat.fileDataUrl);
-          else downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
+        host.querySelector('#modalDlMatBtn')?.addEventListener('click', async () => {
+          showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
+          try {
+            if (mat.fileUrl) {
+              await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+            } else if (mat.fileDataUrl) {
+              downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+            } else {
+              downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
+            }
+            showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+          } catch {
+            showToast('Download failed. Please try again.', 'error');
+          }
         });
       });
     });

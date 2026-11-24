@@ -1181,6 +1181,7 @@ class RealTimeStore {
       fileName: payload.fileName || '',
       mimeType: payload.mimeType || '',
       fileDataUrl: payload.fileDataUrl || '',
+      fileUrl: payload.fileUrl || '',
       uploadedAt: formatTimeNow(),
     };
     await this.mutate((s) => {
@@ -1366,10 +1367,12 @@ class RealTimeStore {
     }, title ? `Removed timetable entry: ${title}` : '');
   }
 
-  async setTimetableImage({ dataUrl, fileName, caption = '' }) {
+  async setTimetableImage({ url = '', dataUrl = '', fileName, caption = '', fallbackUrl = '' }) {
     await this.mutate((s) => {
       s.timetableImage = {
+        url,
         dataUrl,
+        fallbackUrl: fallbackUrl || '/assets/college-timetable.png',
         fileName: fileName || 'college-timetable.png',
         caption: caption.trim(),
         uploadedAt: new Date().toISOString(),

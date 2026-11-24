@@ -862,6 +862,31 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // 1d. Cloud Storage Upload URL — POST /api/upload-url (admin only)
+    if (reqPath === '/api/upload-url') {
+      if (method !== 'POST') return sendJson(res, 405, { ok: false, error: 'Method Not Allowed' });
+      if (!session || session.role !== 'admin') return sendJson(res, 403, { ok: false, error: 'Administrator authentication required' });
+      const sb = getSupabase();
+      if (!sb) return sendJson(res, 500, { ok: false, error: 'Supabase storage not configured' });
+      const rawName = String(body.fileName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const folder = body.folder === 'timetable' ? 'timetable' : 'materials';
+      const cleanPath = `${folder}/${Date.now()}_${rawName}`;
+      try {
+        const { data, error } = await sb.storage.from('classroom-assets').createSignedUploadUrl(cleanPath);
+        if (error) return sendJson(res, 500, { ok: false, error: error.message });
+        const { data: pubData } = sb.storage.from('classroom-assets').getPublicUrl(cleanPath);
+        return sendJson(res, 200, {
+          ok: true,
+          signedUrl: data.signedUrl,
+          publicUrl: pubData.publicUrl,
+          path: cleanPath,
+          fileName: rawName
+        });
+      } catch (err) {
+        return sendJson(res, 500, { ok: false, error: err?.message || 'Failed to create upload URL' });
+      }
+    }
+
     // 2. Version
     if (reqPath === '/api/version') {
       if (method !== 'GET') {

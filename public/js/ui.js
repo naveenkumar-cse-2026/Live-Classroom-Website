@@ -315,3 +315,31 @@ export function downloadDataUrl(filename, dataUrl) {
   a.click();
   a.remove();
 }
+
+export async function downloadFromUrl(url, filename) {
+  if (!url) return false;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Fetch failed');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    return true;
+  } catch {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'download';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return true;
+  }
+}

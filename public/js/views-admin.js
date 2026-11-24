@@ -10,6 +10,7 @@ import {
   bindAdminSidebarToggle,
   downloadTextFile,
   downloadDataUrl,
+  downloadFromUrl,
 } from './ui.js';
 
 function getDepartmentOptions(selectedValue = '') {
@@ -1424,6 +1425,7 @@ function openMaterialModal(existing = null) {
       const reader = new FileReader();
       reader.onload = () => {
         pendingFile = {
+          rawFile: file,
           fileName: file.name,
           mimeType: file.type || 'application/octet-stream',
           fileDataUrl: reader.result,
@@ -1453,10 +1455,42 @@ function openMaterialModal(existing = null) {
         fileName: pendingFile?.fileName || '',
         mimeType: pendingFile?.mimeType || '',
         fileDataUrl: pendingFile?.fileDataUrl || '',
+        fileUrl: existing?.fileUrl || '',
         size: pendingFile?.size || '',
         meta: pendingFile?.fileName ? `${pendingFile.fileName} • ${pendingFile.size}` : 'Study Notes',
       };
       try {
+        if (pendingFile?.rawFile) {
+          submitBtn.textContent = 'Uploading File...';
+          try {
+            const adminToken = store.getAdminSession()?.token || '';
+            const upUrlRes = await fetch('/api/upload-url', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(adminToken ? { 'X-Auth-Token': adminToken } : {}),
+              },
+              body: JSON.stringify({ fileName: pendingFile.fileName, folder: 'materials' }),
+            });
+            if (upUrlRes.ok) {
+              const upUrlData = await upUrlRes.json();
+              if (upUrlData.signedUrl) {
+                const uploadRes = await fetch(upUrlData.signedUrl, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': pendingFile.mimeType },
+                  body: pendingFile.rawFile,
+                });
+                if (uploadRes.ok) {
+                  payload.fileUrl = upUrlData.publicUrl;
+                  payload.fileDataUrl = ''; // Clean cloud storage reference
+                }
+              }
+            }
+          } catch (upErr) {
+            console.warn('[Upload] Cloud upload fallback to dataUrl:', upErr);
+          }
+        }
+        submitBtn.textContent = 'Saving Record...';
         if (isEdit) {
           await store.updateMaterial(existing.id, payload);
           showToast('Study material updated and synced!', 'success');
@@ -1590,7 +1624,7 @@ export function renderAdminResources(container) {
                         <h4 class="text-xs font-semibold text-[#172B4D] mt-0.5 break-words">${esc(m.title)}</h4>
                       </div>
                       <div class="flex items-center gap-1 shrink-0">
-                        ${m.fileDataUrl ? `
+                        ${m.fileUrl || m.fileDataUrl ? `
                           <button type="button" data-dl-mat="${esc(m.id)}" title="Download File" class="p-1 rounded hover:bg-[#E6F4FF] text-[#64748B] hover:text-[#172B4D]">
                             <span class="material-symbols-outlined text-[16px]">download</span>
                           </button>
@@ -1706,9 +1740,22 @@ export function renderAdminResources(container) {
   container.querySelector('[data-empty-not]')?.addEventListener('click', () => openNoticeModal());
 
   container.querySelectorAll('[data-dl-mat]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const mat = materials.find((x) => x.id === btn.dataset.dlMat);
-      if (mat?.fileDataUrl) downloadDataUrl(mat.fileName || mat.title, mat.fileDataUrl);
+      if (!mat) return;
+      showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
+      try {
+        if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
+        } else if (mat.fileDataUrl) {
+          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
+        } else {
+          downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
+        }
+        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
+      } catch {
+        showToast('Download failed. Please try again.', 'error');
+      }
     });
   });
 
@@ -2020,7 +2067,7 @@ export function renderAdminTimetable(container) {
             ${timetableImage ? `
               <div class="space-y-2">
                 <div class="rounded-xl bg-[#F0F8FF] border border-[#4A90E2]/20 p-3 overflow-auto flex justify-center">
-                  <img src="${timetableImage.dataUrl}" alt="Official College Timetable" class="max-w-full h-auto rounded-lg object-contain" />
+                  <img src="${timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png'}" alt="Official College Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="max-w-full h-auto rounded-lg object-contain" />
                 </div>
                 <div class="flex items-center justify-between text-[11px] font-code text-[#64748B]/60">
                   <span>File: ${esc(timetableImage.fileName)}</span>
@@ -2159,7 +2206,34 @@ export function renderAdminTimetable(container) {
     }
     const reader = new FileReader();
     reader.onload = async () => {
-      await store.setTimetableImage({ dataUrl: reader.result, fileName: file.name });
+      let publicUrl = '';
+      try {
+        const adminToken = store.getAdminSession()?.token || '';
+        const upUrlRes = await fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(adminToken ? { 'X-Auth-Token': adminToken } : {}) },
+          body: JSON.stringify({ fileName: file.name, folder: 'timetable' }),
+        });
+        if (upUrlRes.ok) {
+          const upUrlData = await upUrlRes.json();
+          if (upUrlData.signedUrl) {
+            const uploadRes = await fetch(upUrlData.signedUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': file.type || 'image/png' },
+              body: file,
+            });
+            if (uploadRes.ok) publicUrl = upUrlData.publicUrl;
+          }
+        }
+      } catch (err) {
+        console.warn('[Timetable] Cloud upload fallback to dataUrl:', err);
+      }
+      await store.setTimetableImage({
+        url: publicUrl,
+        dataUrl: publicUrl ? '' : reader.result,
+        fileName: file.name,
+        fallbackUrl: '/assets/college-timetable.png',
+      });
       showToast('College timetable image uploaded and saved permanently!', 'success');
     };
     reader.readAsDataURL(file);
@@ -2174,7 +2248,7 @@ export function renderAdminTimetable(container) {
           <button type="button" data-close-modal class="text-[#64748B] hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-3 max-h-[82vh] overflow-auto flex justify-center bg-[#E6F4FF]">
-          <img src="${timetableImage.dataUrl}" alt="Full Timetable" class="max-w-none sm:max-w-full h-auto object-contain" />
+          <img src="${timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png'}" alt="Full Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="max-w-none sm:max-w-full h-auto object-contain" />
         </div>
       </div>
     `, null, 'max-w-6xl');
