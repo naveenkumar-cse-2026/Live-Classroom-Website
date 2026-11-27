@@ -1,5 +1,5 @@
 import { store } from './store.js';
-import { esc, showToast } from './ui.js';
+import { esc, showToast, init3DTilt } from './ui.js';
 import { renderAuthView, renderAdminLoginView } from './views-auth.js';
 import {
   renderStudentHome,
@@ -98,7 +98,11 @@ function renderCurrentRoute() {
   lastRoute = route;
 
   const handler = ROUTES[route] || renderAuthView;
+  appEl.classList.remove('route-enter');
+  void appEl.offsetWidth;
+  appEl.classList.add('route-enter');
   handler(appEl, query);
+  init3DTilt(appEl);
   renderGlobalAlert();
 }
 

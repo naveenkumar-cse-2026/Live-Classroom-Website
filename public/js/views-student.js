@@ -196,131 +196,150 @@ export function renderStudentHome(container) {
   const pendingCount = assignments.filter((a) => a.status === 'Pending').length;
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame pb-28 min-h-screen">
-      <header class="sticky top-0 z-40 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-[#4A90E2]/10 px-5 py-3.5 flex items-center justify-between">
-        <a href="#student/profile" class="flex items-center gap-3 group min-w-0">
-          <div class="relative shrink-0">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] p-[1.5px] shadow-[0_0_12px_rgba(74,144,226,0.3)]">
-              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[#64748B] font-headline text-label-lg font-bold overflow-hidden">
-                ${student.avatarDataUrl
-                  ? `<img src="${esc(student.avatarDataUrl)}" class="w-full h-full object-cover" alt="${esc(student.name)}" />`
-                  : esc(student.initials)}
+    <div class="theme-student min-h-screen">
+      <div class="student-shell student-shell-frame pb-28 min-h-screen">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-indigo-100 px-5 py-3.5 flex items-center justify-between">
+          <a href="#student/profile" class="flex items-center gap-3 group min-w-0">
+            <div class="relative shrink-0">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#2563EB] via-[#4F46E5] to-[#7C3AED] p-[2px] shadow-sm">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[#1E1B4B] font-headline text-sm font-bold overflow-hidden">
+                  ${student.avatarDataUrl
+                    ? `<img src="${esc(student.avatarDataUrl)}" class="w-full h-full object-cover" alt="${esc(student.name)}" />`
+                    : esc(student.initials)}
+                </div>
               </div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></span>
             </div>
-            <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-white"></span>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="font-code text-label-sm text-neon-purple font-medium">${esc(student.regNo)}</span>
-              ${student.department ? `<span class="w-1 h-1 rounded-full bg-cyber-lavender/40"></span><span class="text-label-sm text-[#64748B]/70 truncate max-w-[115px]">${esc(student.department)}</span>` : ''}
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-code text-[11px] text-[#4F46E5] font-semibold">${esc(student.regNo)}</span>
+                ${student.department ? `<span class="w-1 h-1 rounded-full bg-slate-300"></span><span class="text-[11px] text-slate-500 truncate max-w-[120px]">${esc(student.department)}</span>` : ''}
+              </div>
+              <h1 class="font-headline text-base font-bold text-[#1E1B4B] tracking-tight leading-none mt-0.5 truncate group-hover:text-[#4F46E5] transition-colors">Hi, ${esc(student.name)}</h1>
             </div>
-            <h1 class="font-headline text-headline-sm text-[#172B4D] tracking-tight leading-none mt-0.5 truncate group-hover:text-[#64748B] transition-colors">Hi, ${esc(student.name)}</h1>
+          </a>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="notifBellBtn" type="button" aria-label="Notifications" class="btn-3d w-9 h-9 rounded-full bg-indigo-50/70 border border-indigo-100 flex items-center justify-center text-[#4F46E5] hover:bg-indigo-100 relative">
+              <span class="material-symbols-outlined text-[20px]">notifications</span>
+              ${notices.length > 0 ? `<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#7C3AED]"></span>` : ''}
+            </button>
           </div>
-        </a>
+        </header>
 
-        <div class="flex items-center gap-2 shrink-0">
-          <button id="notifBellBtn" type="button" aria-label="Notifications" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] hover:border-[#4A90E2]/30 transition-all relative">
-            <span class="material-symbols-outlined text-[20px]">notifications</span>
-            ${notices.length > 0 ? `<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-neon-purple shadow-[0_0_6px_rgba(74,144,226,0.4)]"></span>` : ''}
-          </button>
-        </div>
-      </header>
-
-      <main class="px-5 pt-4 space-y-6 animate-enter">
-        <div class="flex items-center justify-between text-[11px] gap-2">
-          <span class="font-code text-[#64748B]/60 truncate">${esc(settings.collegeName || 'Live AI Classroom')}</span>
-          ${renderSyncPill()}
-        </div>
-
-        <!-- Real-Time Timetable Hero Banner -->
-        <section class="relative rounded-2xl p-5 bg-gradient-to-br from-[#EBF4FF] via-[#F0F8FF] to-white border border-[#4A90E2]/25 shadow-[0_8px_32px_rgba(74,144,226,0.12)] overflow-hidden">
-          <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#4A90E2]/15 rounded-full blur-2xl"></div>
-          <div class="flex items-center justify-between relative z-10 mb-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#4A90E2]/12 border border-[#4A90E2]/30 text-[#172B4D] font-code text-xs font-semibold">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              IST Real-Time Schedule
-            </span>
-            <span id="heroClockText" class="font-code text-xs text-[#64748B] font-medium"></span>
+        <main class="px-5 pt-5 space-y-6 animate-enter">
+          <div class="flex items-center justify-between text-[11px] gap-2">
+            <span class="font-code text-slate-500 truncate">${esc(settings.collegeName || 'Live AI Classroom')}</span>
+            ${renderSyncPill()}
           </div>
-          <div class="relative z-10">
-            <h2 id="heroDayDateText" class="font-headline text-headline-sm text-[#172B4D] font-bold"></h2>
-            <p id="heroPeriodSummaryText" class="text-body-sm text-[#64748B] mt-1"></p>
-          </div>
-        </section>
 
-        <!-- Quick Actions (Clean 3-Column Grid) -->
-        <section>
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="font-headline text-title-lg text-[#172B4D]">Quick Actions</h2>
-          </div>
-          <div class="grid grid-cols-3 gap-3">
-            <a href="#student/vault" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
-              <div class="w-9 h-9 rounded-lg bg-deep-violet/30 border border-deep-violet/50 text-[#64748B] flex items-center justify-center mb-2">
-                <span class="material-symbols-outlined text-[20px]">menu_book</span>
-              </div>
-              <div>
-                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Study Vault</h3>
-                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${materials.length} files</p>
-              </div>
-            </a>
-
-            <a href="#student/assignments" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
-              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 flex items-center justify-center mb-2">
-                <span class="material-symbols-outlined text-[20px]">assignment</span>
-              </div>
-              <div>
-                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Assignments</h3>
-                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${pendingCount} due</p>
-              </div>
-            </a>
-
-            <a href="#student/assignments?tab=notices" class="p-3.5 rounded-xl bg-white/85 border border-[#4A90E2]/15 hover:border-[#4A90E2]/40 transition-all flex flex-col justify-between group shadow-sm">
-              <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-500 flex items-center justify-center mb-2">
-                <span class="material-symbols-outlined text-[20px]">campaign</span>
-              </div>
-              <div>
-                <h3 class="font-headline text-xs font-semibold text-[#172B4D]">Notices</h3>
-                <p class="text-[10px] text-[#64748B]/70 mt-0.5">${notices.length} alerts</p>
-              </div>
-            </a>
-          </div>
-        </section>
-
-        <!-- Official Uploaded College Timetable -->
-        ${timetableImage ? `
-          <section class="p-4 rounded-xl bg-white/80 border border-[#4A90E2]/20 space-y-3">
-            <div class="flex items-center justify-between">
-              <h2 class="font-headline text-title-md text-[#172B4D] flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-neon-purple text-[20px]">calendar_month</span>
-                Official College Timetable
-              </h2>
-              <button id="studentZoomTtBtn" type="button" class="text-xs font-code text-neon-purple hover:underline">Full View</button>
+          <!-- Real-Time Timetable Hero Banner (Theme 5 Gradient) -->
+          <section class="student-gradient-hero card-3d relative rounded-2xl p-5 sm:p-6 overflow-hidden">
+            <div class="flex items-center justify-between relative z-10 mb-3">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white font-code text-xs font-medium backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                IST Real-Time Schedule
+              </span>
+              <span id="heroClockText" class="font-code text-xs text-indigo-100 font-medium"></span>
             </div>
-            <img id="studentTtThumb" src="${timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png'}" alt="College Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="w-full h-auto rounded-lg border border-glass-border cursor-pointer object-contain bg-[#E6F4FF]" />
+            <div class="relative z-10">
+              <h2 id="heroDayDateText" class="font-headline text-xl sm:text-2xl text-white font-bold tracking-tight"></h2>
+              <p id="heroPeriodSummaryText" class="text-xs sm:text-sm text-indigo-100 mt-1"></p>
+            </div>
           </section>
-        ` : ''}
 
-        <!-- Dynamic Timetable & Scheduled Classes Section -->
-        <section id="timetableDynamicSection" class="space-y-3.5">
-          <!-- Timetable cards dynamically injected by renderTimetableEngine -->
-        </section>
-
-        <!-- Upcoming Events -->
-        ${events.length > 0 ? `
-          <section class="space-y-2.5">
-            <h2 class="font-headline text-title-lg text-[#172B4D]">Campus Events</h2>
-            ${events.slice(0, 3).map((ev) => `
-              <div class="p-3.5 rounded-lg bg-white/70 border border-emerald-500/20">
-                <span class="font-code text-[11px] text-emerald-400">${esc(ev.date)} ${ev.time ? `• ${esc(ev.time)}` : ''}</span>
-                <h3 class="font-headline text-sm text-[#172B4D] mt-0.5">${esc(ev.title)}</h3>
-                ${ev.venue ? `<p class="text-xs text-[#64748B]/65">${esc(ev.venue)}</p>` : ''}
-              </div>
-            `).join('')}
+          <!-- Academic & Attendance Snapshot -->
+          <section class="grid grid-cols-3 gap-3">
+            <div class="student-card card-3d p-3.5 text-center">
+              <span class="text-[11px] font-label text-slate-500 block">Attendance</span>
+              <span class="font-code text-lg sm:text-xl font-bold text-[#4F46E5] mt-0.5 block">${Number(student.attendance ?? 0)}%</span>
+            </div>
+            <div class="student-card card-3d p-3.5 text-center">
+              <span class="text-[11px] font-label text-slate-500 block">Pending Tasks</span>
+              <span class="font-code text-lg sm:text-xl font-bold text-[#1E1B4B] mt-0.5 block">${pendingCount}</span>
+            </div>
+            <div class="student-card card-3d p-3.5 text-center">
+              <span class="text-[11px] font-label text-slate-500 block">Study Files</span>
+              <span class="font-code text-lg sm:text-xl font-bold text-[#7C3AED] mt-0.5 block">${materials.length}</span>
+            </div>
           </section>
-        ` : ''}
-      </main>
 
-      ${renderStudentBottomNav('student/home')}
+          <!-- Quick Actions -->
+          <section>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="font-headline text-base font-bold text-[#1E1B4B]">Quick Actions</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <a href="#student/vault" class="student-card card-3d p-3.5 flex flex-col justify-between group">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2563EB]/10 to-[#4F46E5]/15 border border-indigo-200/70 text-[#4F46E5] flex items-center justify-center mb-2">
+                  <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                </div>
+                <div>
+                  <h3 class="font-headline text-xs font-semibold text-[#1E1B4B]">Study Vault</h3>
+                  <p class="text-[10px] text-slate-500 mt-0.5">${materials.length} files</p>
+                </div>
+              </a>
+
+              <a href="#student/assignments" class="student-card card-3d p-3.5 flex flex-col justify-between group">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mb-2">
+                  <span class="material-symbols-outlined text-[20px]">assignment</span>
+                </div>
+                <div>
+                  <h3 class="font-headline text-xs font-semibold text-[#1E1B4B]">Assignments</h3>
+                  <p class="text-[10px] text-slate-500 mt-0.5">${pendingCount} due</p>
+                </div>
+              </a>
+
+              <a href="#student/assignments?tab=notices" class="student-card card-3d p-3.5 flex flex-col justify-between group">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-2">
+                  <span class="material-symbols-outlined text-[20px]">campaign</span>
+                </div>
+                <div>
+                  <h3 class="font-headline text-xs font-semibold text-[#1E1B4B]">Notices</h3>
+                  <p class="text-[10px] text-slate-500 mt-0.5">${notices.length} alerts</p>
+                </div>
+              </a>
+            </div>
+          </section>
+
+          <!-- Official Uploaded College Timetable -->
+          ${timetableImage ? `
+            <section class="student-card p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <h2 class="font-headline text-sm font-bold text-[#1E1B4B] flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[#4F46E5] text-[20px]">calendar_month</span>
+                  Official College Timetable
+                </h2>
+                <button id="studentZoomTtBtn" type="button" class="text-xs font-code text-[#4F46E5] font-semibold hover:underline">Full View</button>
+              </div>
+              <img id="studentTtThumb" src="${timetableImage.url || timetableImage.fallbackUrl || timetableImage.dataUrl || '/assets/college-timetable.png'}" alt="College Timetable" onerror="this.onerror=null; this.src='/assets/college-timetable.png';" class="w-full h-auto rounded-xl border border-indigo-100 cursor-pointer object-contain bg-slate-50" />
+            </section>
+          ` : ''}
+
+          <!-- Dynamic Timetable & Scheduled Classes Section -->
+          <section id="timetableDynamicSection" class="space-y-3.5">
+            <!-- Timetable cards dynamically injected by renderTimetableEngine -->
+          </section>
+
+          <!-- Upcoming Events -->
+          ${events.length > 0 ? `
+            <section class="space-y-2.5">
+              <h2 class="font-headline text-base font-bold text-[#1E1B4B]">Campus Events</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                ${events.slice(0, 3).map((ev) => `
+                  <div class="student-card card-3d p-3.5">
+                    <span class="font-code text-[11px] text-[#4F46E5] font-semibold">${esc(ev.date)} ${ev.time ? `• ${esc(ev.time)}` : ''}</span>
+                    <h3 class="font-headline text-sm font-semibold text-[#1E1B4B] mt-0.5">${esc(ev.title)}</h3>
+                    ${ev.venue ? `<p class="text-xs text-slate-500 mt-0.5">${esc(ev.venue)}</p>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </section>
+          ` : ''}
+        </main>
+
+        ${renderStudentBottomNav('student/home')}
+      </div>
     </div>
   `;
 
@@ -426,26 +445,24 @@ export function renderStudentHome(container) {
     // Day Selector Tabs
     const dayPillsHtml = `
       <div class="flex items-center justify-between gap-1 overflow-x-auto pb-1 no-scrollbar">
-        <button type="button" data-select-day="today" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${
-          selectedTimetableDay === null || selectedTimetableDay.toLowerCase() === ist.day.toLowerCase()
-            ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
-            : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
-        }">
+        <button type="button" data-select-day="today" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${selectedTimetableDay === null || selectedTimetableDay.toLowerCase() === ist.day.toLowerCase()
+        ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
+        : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
+      }">
           Today (${ist.day})
         </button>
         ${daysOfWeek.map((d) => {
-          const isSelected = activeDay.toLowerCase() === d.toLowerCase();
-          const isCurrentDay = d.toLowerCase() === ist.day.toLowerCase();
-          return `
-            <button type="button" data-select-day="${d}" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${
-              isSelected && (selectedTimetableDay !== null || isWeekend)
-                ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
-                : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
-            }">
+        const isSelected = activeDay.toLowerCase() === d.toLowerCase();
+        const isCurrentDay = d.toLowerCase() === ist.day.toLowerCase();
+        return `
+            <button type="button" data-select-day="${d}" class="px-3 py-1.5 rounded-full text-xs font-label transition-all shrink-0 ${isSelected && (selectedTimetableDay !== null || isWeekend)
+            ? 'bg-[#4A90E2] text-white shadow-sm font-semibold'
+            : 'bg-white/80 border border-glass-border text-[#64748B] hover:text-[#172B4D]'
+          }">
               ${d} ${isCurrentDay ? '•' : ''}
             </button>
           `;
-        }).join('')}
+      }).join('')}
       </div>
     `;
 
@@ -734,76 +751,78 @@ export function renderStudyVault(container) {
   };
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame pb-28 min-h-screen">
-      <header class="sticky top-0 z-40 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-[#4A90E2]/10 px-5 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <a href="#student/home" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] transition-all">
-            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-          </a>
-          <div>
-            <h1 class="font-headline text-title-lg text-[#172B4D]">Study Materials Vault</h1>
-            <p class="text-[11px] font-code text-neon-purple">Uploaded Faculty Notes &amp; Documents</p>
+    <div class="theme-student min-h-screen">
+      <div class="student-shell student-shell-frame pb-28 min-h-screen">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-indigo-100 px-5 py-3.5 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <a href="#student/home" class="btn-3d w-9 h-9 rounded-full bg-indigo-50/70 border border-indigo-100 flex items-center justify-center text-[#4F46E5] hover:bg-indigo-100">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+            <div>
+              <h1 class="font-headline text-lg font-bold text-[#1E1B4B]">Study Materials Vault</h1>
+              <p class="text-[11px] font-code text-[#4F46E5]">Uploaded Faculty Notes &amp; Documents</p>
+            </div>
           </div>
-        </div>
-        <span class="font-code text-xs px-2.5 py-0.5 rounded-full bg-neon-purple/20 border border-[#4A90E2]/25 text-[#64748B]">${materials.length}</span>
-      </header>
+          <span class="font-code text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[#4F46E5] font-semibold">${materials.length}</span>
+        </header>
 
-      <main class="px-5 pt-5 space-y-5 animate-enter">
-        <div class="space-y-3">
-          <div class="relative flex items-center">
-            <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/50 text-[18px]">search</span>
-            <input id="vaultSearchInput" type="text" value="${esc(vaultSearch)}" placeholder="Search uploaded notes, PDFs, images..." class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-xs placeholder-[#64748B]/40 focus:border-[#4A90E2] outline-none" />
+        <main class="px-5 pt-5 space-y-5 animate-enter">
+          <div class="space-y-3">
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[18px]">search</span>
+              <input id="vaultSearchInput" type="text" value="${esc(vaultSearch)}" placeholder="Search uploaded notes, PDFs, images..." class="glass-input w-full pl-10 pr-4 py-2.5 text-xs placeholder-slate-400" />
+            </div>
+
+            ${courses.length > 0 ? `
+              <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <button type="button" data-vault-filter="ALL" class="btn-3d px-3.5 py-1.5 rounded-full text-xs font-label whitespace-nowrap ${vaultFilter === 'ALL' ? 'bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white shadow-xs' : 'bg-white text-slate-600 border border-indigo-100'}">
+                  All (${materials.length})
+                </button>
+                ${courses.map((c) => `
+                  <button type="button" data-vault-filter="${esc(c)}" class="btn-3d px-3.5 py-1.5 rounded-full text-xs font-label whitespace-nowrap ${vaultFilter === c ? 'bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white shadow-xs' : 'bg-white text-slate-600 border border-indigo-100'}">
+                    ${esc(c)}
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
           </div>
 
-          ${courses.length > 0 ? `
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <button type="button" data-vault-filter="ALL" class="px-3 py-1 rounded-full text-xs font-label whitespace-nowrap ${vaultFilter === 'ALL' ? 'bg-[#4A90E2] text-white' : 'bg-[#F0F8FF] text-[#64748B] border border-[#4A90E2]/10'}">
-                All (${materials.length})
-              </button>
-              ${courses.map((c) => `
-                <button type="button" data-vault-filter="${esc(c)}" class="px-3 py-1 rounded-full text-xs font-label whitespace-nowrap ${vaultFilter === c ? 'bg-[#4A90E2] text-white' : 'bg-[#F0F8FF] text-[#64748B] border border-[#4A90E2]/10'}">
-                  ${esc(c)}
-                </button>
-              `).join('')}
-            </div>
-          ` : ''}
-        </div>
-
-        <section class="space-y-3.5">
-          ${materials.length === 0 ? `
-            <div class="p-10 rounded-xl bg-[#F0F8FF]/60 border border-dashed border-glass-border text-center space-y-2">
-              <span class="material-symbols-outlined text-[#64748B]/40 text-[34px]">folder_open</span>
-              <h3 class="font-headline text-sm text-[#172B4D]">No Study Materials Yet</h3>
-              <p class="text-xs text-[#64748B]/65">Materials uploaded by your administrator will appear here automatically.</p>
-            </div>
-          ` : filtered.length === 0 ? `
-            <div class="p-8 rounded-xl bg-[#F0F8FF]/60 border border-glass-border text-center text-xs text-[#64748B]/60">
-              No study materials match your search.
-            </div>
-          ` : filtered.map((m) => {
-            const st = iconFor(m.type);
-            return `
-              <article data-open-mat="${esc(m.id)}" class="p-4 rounded-xl bg-white/80 border border-glass-border hover:border-[#4A90E2]/30 transition-all flex items-start justify-between gap-3 group cursor-pointer">
-                <div class="flex items-start gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-lg ${st.cls} border flex items-center justify-center flex-shrink-0">
-                    <span class="material-symbols-outlined text-[22px]">${st.icon}</span>
+          <section class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            ${materials.length === 0 ? `
+              <div class="md:col-span-2 student-card p-10 border-dashed text-center space-y-2">
+                <span class="material-symbols-outlined text-slate-300 text-[34px]">folder_open</span>
+                <h3 class="font-headline text-sm font-semibold text-[#1E1B4B]">No Study Materials Yet</h3>
+                <p class="text-xs text-slate-500">Materials uploaded by your administrator will appear here automatically.</p>
+              </div>
+            ` : filtered.length === 0 ? `
+              <div class="md:col-span-2 student-card p-8 text-center text-xs text-slate-500">
+                No study materials match your search.
+              </div>
+            ` : filtered.map((m) => {
+              const st = iconFor(m.type);
+              return `
+                <article data-open-mat="${esc(m.id)}" class="student-card card-3d p-4 flex items-start justify-between gap-3 group cursor-pointer">
+                  <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl ${st.cls} border flex items-center justify-center flex-shrink-0">
+                      <span class="material-symbols-outlined text-[22px]">${st.icon}</span>
+                    </div>
+                    <div class="min-w-0">
+                      <span class="font-code text-[11px] ${st.tag} uppercase block truncate">${esc(m.courseTag)}</span>
+                      <h4 class="font-headline text-sm font-semibold text-[#1E1B4B] mt-0.5 break-words">${esc(m.title)}</h4>
+                      <p class="text-[11px] text-slate-500 mt-0.5">${esc(m.meta || m.author)}</p>
+                    </div>
                   </div>
-                  <div class="min-w-0">
-                    <span class="font-code text-[11px] ${st.tag} uppercase block truncate">${esc(m.courseTag)}</span>
-                    <h4 class="font-headline text-sm font-semibold text-[#172B4D] mt-0.5 break-words">${esc(m.title)}</h4>
-                    <p class="text-[11px] text-[#64748B]/60 mt-0.5">${esc(m.meta || m.author)}</p>
-                  </div>
-                </div>
-                <button type="button" data-download-mat="${esc(m.id)}" class="p-2 rounded-lg bg-[#F0F8FF] hover:bg-[#4A90E2]/10 text-[#64748B] hover:text-[#172B4D] transition-colors flex-shrink-0" title="Download">
-                  <span class="material-symbols-outlined text-[20px]">download</span>
-                </button>
-              </article>
-            `;
-          }).join('')}
-        </section>
-      </main>
+                  <button type="button" data-download-mat="${esc(m.id)}" class="btn-3d p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4F46E5] flex-shrink-0" title="Download">
+                    <span class="material-symbols-outlined text-[20px]">download</span>
+                  </button>
+                </article>
+              `;
+            }).join('')}
+          </section>
+        </main>
 
-      ${renderStudentBottomNav('student/vault')}
+        ${renderStudentBottomNav('student/vault')}
+      </div>
     </div>
   `;
 
@@ -826,18 +845,14 @@ export function renderStudyVault(container) {
       if (!mat) return;
       showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
       try {
-        const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
-        if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
-          const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
-          await downloadFromUrl(dlUrl, targetFilename);
-        } else if (mat.fileUrl) {
-          await downloadFromUrl(mat.fileUrl, targetFilename);
+        if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
         } else if (mat.fileDataUrl) {
-          downloadDataUrl(targetFilename, mat.fileDataUrl);
+          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
         } else {
           downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n${mat.courseTag}\n\n${mat.summary || ''}\n`);
         }
-        showToast(`Downloaded "${targetFilename}"`, 'success');
+        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
       } catch (err) {
         showToast('Download failed. Please try again.', 'error');
       }
@@ -871,18 +886,14 @@ export function renderStudyVault(container) {
         host.querySelector('#modalDlMatBtn')?.addEventListener('click', async () => {
           showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
           try {
-            const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
-            if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
-              const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
-              await downloadFromUrl(dlUrl, targetFilename);
-            } else if (mat.fileUrl) {
-              await downloadFromUrl(mat.fileUrl, targetFilename);
+            if (mat.fileUrl) {
+              await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
             } else if (mat.fileDataUrl) {
-              downloadDataUrl(targetFilename, mat.fileDataUrl);
+              downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
             } else {
               downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
             }
-            showToast(`Downloaded "${targetFilename}"`, 'success');
+            showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
           } catch {
             showToast('Download failed. Please try again.', 'error');
           }
@@ -901,101 +912,109 @@ export function renderAssignmentsNotices(container, queryParams = {}) {
   const pending = assignments.filter((a) => a.status === 'Pending');
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame pb-28 min-h-screen">
-      <header class="sticky top-0 z-40 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-[#4A90E2]/10 px-5 py-3.5 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2.5">
-          <a href="#student/home" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] shrink-0">
-            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-          </a>
-          <h1 class="font-headline text-title-md text-[#172B4D]">Assignments &amp; Notices</h1>
-        </div>
-        <div class="flex items-center gap-1 p-1 rounded-full bg-[#E6F4FF] border border-[#4A90E2]/20 shrink-0">
-          <button id="assignTabBtn" type="button" class="px-3 py-1 rounded-full text-xs font-label ${activeTab === 'assignments' ? 'bg-[#4A90E2] text-white' : 'text-[#64748B]'}">Assignments (${assignments.length})</button>
-          <button id="noticeTabBtn" type="button" class="px-3 py-1 rounded-full text-xs font-label ${activeTab === 'notices' ? 'bg-[#4A90E2] text-white' : 'text-[#64748B]'}">Notices (${notices.length})</button>
-        </div>
-      </header>
+    <div class="theme-student min-h-screen">
+      <div class="student-shell student-shell-frame pb-28 min-h-screen">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-indigo-100 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <a href="#student/home" class="btn-3d w-9 h-9 rounded-full bg-indigo-50/70 border border-indigo-100 flex items-center justify-center text-[#4F46E5] hover:bg-indigo-100 shrink-0">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+            <h1 class="font-headline text-base font-bold text-[#1E1B4B]">Assignments &amp; Notices</h1>
+          </div>
+          <div class="flex items-center gap-1 p-1 rounded-full bg-indigo-50 border border-indigo-100 shrink-0">
+            <button id="assignTabBtn" type="button" class="btn-3d px-3 py-1 rounded-full text-xs font-label ${activeTab === 'assignments' ? 'bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white font-semibold shadow-xs' : 'text-slate-600'}">Assignments (${assignments.length})</button>
+            <button id="noticeTabBtn" type="button" class="btn-3d px-3 py-1 rounded-full text-xs font-label ${activeTab === 'notices' ? 'bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white font-semibold shadow-xs' : 'text-slate-600'}">Notices (${notices.length})</button>
+          </div>
+        </header>
 
-      <main class="px-5 pt-5 space-y-5 animate-enter">
-        <div id="assignmentsSection" class="${activeTab === 'assignments' ? '' : 'hidden'} space-y-4">
-          ${assignments.length === 0 ? `
-            <div class="p-10 rounded-xl bg-[#F0F8FF]/60 border border-dashed border-glass-border text-center space-y-2">
-              <span class="material-symbols-outlined text-[#64748B]/40 text-[34px]">assignment</span>
-              <h3 class="font-headline text-sm text-[#172B4D]">No Assignments Posted</h3>
-              <p class="text-xs text-[#64748B]/65">Assignments posted by your administrator will appear here.</p>
-            </div>
-          ` : `
-            ${pending.length > 0 ? `
-              <div class="p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-50 to-white border border-amber-500/40 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40">
-                    <span class="material-symbols-outlined text-[22px]">timer</span>
-                  </div>
-                  <div>
-                    <h3 class="font-headline text-sm font-semibold text-[#172B4D]">${pending.length} Pending Submission${pending.length > 1 ? 's' : ''}</h3>
-                    <p class="text-[11px] text-[#64748B]/70">${esc(pending[0].title)}</p>
-                  </div>
-                </div>
+        <main class="px-5 pt-5 space-y-5 animate-enter">
+          <div id="assignmentsSection" class="${activeTab === 'assignments' ? '' : 'hidden'} space-y-4">
+            ${assignments.length === 0 ? `
+              <div class="student-card p-10 border-dashed text-center space-y-2">
+                <span class="material-symbols-outlined text-slate-300 text-[34px]">assignment</span>
+                <h3 class="font-headline text-sm font-semibold text-[#1E1B4B]">No Assignments Posted</h3>
+                <p class="text-xs text-slate-500">Assignments posted by your administrator will appear here.</p>
               </div>
-            ` : ''}
-
-            ${assignments.map((a) => a.status === 'Pending' ? `
-              <article class="p-4 rounded-xl bg-white/80 border border-[#4A90E2]/35 space-y-3">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <span class="font-code text-[11px] text-neon-purple font-medium">${esc(a.course)}</span>
-                    <h4 class="font-headline text-title-md text-[#172B4D] mt-0.5">${esc(a.title)}</h4>
-                    <p class="text-xs text-[#64748B]/70 mt-0.5">${esc(a.description)}</p>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-full bg-error/20 text-error font-code text-[11px] border border-error/40 shrink-0">${esc(a.dueLabel)}</span>
-                </div>
-                <div class="flex items-center gap-2 pt-1">
-                  <button type="button" data-upload-asg="${esc(a.id)}" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label flex items-center justify-center gap-1.5">
-                    <span class="material-symbols-outlined text-[16px]">upload_file</span>
-                    <span>Upload Solution</span>
-                  </button>
-                </div>
-              </article>
             ` : `
-              <article class="p-4 rounded-xl bg-white/80 border border-glass-border space-y-2">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <span class="font-code text-[11px] text-electric-violet font-medium">${esc(a.course)}</span>
-                    <h4 class="font-headline text-title-md text-[#172B4D] mt-0.5">${esc(a.title)}</h4>
+              ${pending.length > 0 ? `
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center border border-amber-200">
+                      <span class="material-symbols-outlined text-[22px]">timer</span>
+                    </div>
+                    <div>
+                      <h3 class="font-headline text-sm font-semibold text-[#1E1B4B]">${pending.length} Pending Submission${pending.length > 1 ? 's' : ''}</h3>
+                      <p class="text-[11px] text-slate-600">${esc(pending[0].title)}</p>
+                    </div>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full bg-success/20 text-success font-code text-[11px] border border-success/40 shrink-0">Graded: ${a.score}/${a.points}</span>
                 </div>
-                ${a.feedback ? `<div class="p-2.5 rounded-lg bg-white/85 border border-glass-border text-xs text-[#64748B]/80"><strong class="text-[#172B4D]">Feedback:</strong> ${esc(a.feedback)}</div>` : ''}
-              </article>
-            `).join('')}
-          `}
-        </div>
-
-        <div id="noticesSection" class="${activeTab === 'notices' ? '' : 'hidden'} space-y-4">
-          ${notices.length === 0 ? `
-            <div class="p-10 rounded-xl bg-[#F0F8FF]/60 border border-dashed border-glass-border text-center space-y-2">
-              <span class="material-symbols-outlined text-[#64748B]/40 text-[34px]">campaign</span>
-              <h3 class="font-headline text-sm text-[#172B4D]">No Notices Yet</h3>
-              <p class="text-xs text-[#64748B]/65">Official college announcements will appear here.</p>
-            </div>
-          ` : notices.map((n) => `
-            <article class="p-4 rounded-xl bg-white/80 border border-[#4A90E2]/20 space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <span class="font-code text-[11px] px-2 py-0.5 rounded border text-neon-purple bg-neon-purple/10 border-[#4A90E2]/20">${esc(n.category)}</span>
-                <span class="font-code text-[11px] text-[#64748B]/50">${esc(n.timeLabel)}</span>
-              </div>
-              <h4 class="font-headline text-title-md text-[#172B4D]">${esc(n.title)}</h4>
-              <p class="text-xs text-[#64748B]/80 leading-relaxed">${esc(n.body)}</p>
-              ${n.hasAttachment ? `
-                <button type="button" data-dl-notice="${esc(n.id)}" class="px-3 py-1.5 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 text-xs text-neon-purple flex items-center gap-1">
-                  <span class="material-symbols-outlined text-sm">download</span> Download Circular
-                </button>
               ` : ''}
-            </article>
-          `).join('')}
-        </div>
-      </main>
 
-      ${renderStudentBottomNav('student/assignments')}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${assignments.map((a) => a.status === 'Pending' ? `
+                  <article class="student-card card-3d p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <span class="font-code text-[11px] text-[#4F46E5] font-semibold">${esc(a.course)}</span>
+                        <h4 class="font-headline text-base font-bold text-[#1E1B4B] mt-0.5">${esc(a.title)}</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">${esc(a.description)}</p>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-code text-[11px] border border-rose-200 shrink-0">${esc(a.dueLabel)}</span>
+                    </div>
+                    <div class="flex items-center gap-2 pt-1">
+                      <button type="button" data-upload-asg="${esc(a.id)}" class="btn-3d flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white text-xs font-label font-semibold flex items-center justify-center gap-1.5 shadow-sm">
+                        <span class="material-symbols-outlined text-[16px]">upload_file</span>
+                        <span>Upload Solution</span>
+                      </button>
+                    </div>
+                  </article>
+                ` : `
+                  <article class="student-card card-3d p-4 space-y-2">
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <span class="font-code text-[11px] text-[#7C3AED] font-semibold">${esc(a.course)}</span>
+                        <h4 class="font-headline text-base font-bold text-[#1E1B4B] mt-0.5">${esc(a.title)}</h4>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-code text-[11px] border border-emerald-200 shrink-0">Graded: ${a.score}/${a.points}</span>
+                    </div>
+                    ${a.feedback ? `<div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600"><strong class="text-[#1E1B4B]">Feedback:</strong> ${esc(a.feedback)}</div>` : ''}
+                  </article>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <div id="noticesSection" class="${activeTab === 'notices' ? '' : 'hidden'} space-y-4">
+            ${notices.length === 0 ? `
+              <div class="student-card p-10 border-dashed text-center space-y-2">
+                <span class="material-symbols-outlined text-slate-300 text-[34px]">campaign</span>
+                <h3 class="font-headline text-sm font-semibold text-[#1E1B4B]">No Notices Yet</h3>
+                <p class="text-xs text-slate-500">Official college announcements will appear here.</p>
+              </div>
+            ` : `
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${notices.map((n) => `
+                  <article class="student-card card-3d p-4 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-code text-[11px] px-2.5 py-0.5 rounded-full border text-[#4F46E5] bg-indigo-50 border-indigo-200 font-semibold">${esc(n.category)}</span>
+                      <span class="font-code text-[11px] text-slate-400">${esc(n.timeLabel)}</span>
+                    </div>
+                    <h4 class="font-headline text-base font-bold text-[#1E1B4B]">${esc(n.title)}</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">${esc(n.body)}</p>
+                    ${n.hasAttachment ? `
+                      <button type="button" data-dl-notice="${esc(n.id)}" class="btn-3d px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-xs text-[#4F46E5] font-medium flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">download</span> Download Circular
+                      </button>
+                    ` : ''}
+                  </article>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </main>
+
+        ${renderStudentBottomNav('student/assignments')}
+      </div>
     </div>
   `;
 
@@ -1059,75 +1078,82 @@ export function renderStudentProfile(container) {
   if (!student) return;
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame pb-28 min-h-screen">
-      <header class="sticky top-0 z-40 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-[#4A90E2]/10 px-5 py-3.5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <a href="#student/home" class="w-9 h-9 rounded-full bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D]">
-            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-          </a>
-          <h1 class="font-headline text-title-lg text-[#172B4D]">Student Profile &amp; Settings</h1>
-        </div>
-        <span class="px-2.5 py-0.5 rounded-full bg-success/20 text-success border border-success/40 text-[11px] font-code">Active</span>
-      </header>
+    <div class="theme-student min-h-screen">
+      <div class="student-shell student-shell-frame pb-28 min-h-screen">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-indigo-100 px-5 py-3.5 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <a href="#student/home" class="btn-3d w-9 h-9 rounded-full bg-indigo-50/70 border border-indigo-100 flex items-center justify-center text-[#4F46E5] hover:bg-indigo-100">
+              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+            <h1 class="font-headline text-lg font-bold text-[#1E1B4B]">Student Profile &amp; Settings</h1>
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-code font-medium">Active</span>
+        </header>
 
-      <main class="px-5 pt-6 space-y-6 animate-enter">
-        <section class="p-6 rounded-2xl bg-gradient-to-b from-[#EBF4FF] to-white border border-[#4A90E2]/25 text-center">
-          <input id="avatarUploadInp" type="file" accept="image/*" class="hidden" />
-          <div class="relative w-24 h-24 mx-auto mb-4">
-            <div class="w-full h-full rounded-full bg-gradient-to-tr from-[#4A90E2] via-[#64B5F6] to-[#2563EB] p-[2px]">
-              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[#172B4D] font-headline text-display-lg-mobile font-bold overflow-hidden">
-                ${student.avatarDataUrl ? `<img src="${esc(student.avatarDataUrl)}" class="w-full h-full object-cover" />` : esc(student.initials)}
+        <main class="px-5 pt-6 space-y-6 max-w-xl mx-auto animate-enter">
+          <section class="student-card card-3d p-6 text-center">
+            <input id="avatarUploadInp" type="file" accept="image/*" class="hidden" />
+            <div class="relative w-24 h-24 mx-auto mb-4">
+              <div class="w-full h-full rounded-full bg-gradient-to-tr from-[#2563EB] via-[#4F46E5] to-[#7C3AED] p-[2.5px]">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[#1E1B4B] font-headline text-2xl font-bold overflow-hidden">
+                  ${student.avatarDataUrl ? `<img src="${esc(student.avatarDataUrl)}" class="w-full h-full object-cover" />` : esc(student.initials)}
+                </div>
+              </div>
+              <button id="changeAvatarBtn" type="button" class="btn-3d absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#4F46E5] border-2 border-white text-white flex items-center justify-center shadow-sm">
+                <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+              </button>
+            </div>
+            <h2 class="font-headline text-xl font-bold text-[#1E1B4B]">${esc(student.name)}</h2>
+            <p class="font-code text-xs text-[#4F46E5] font-semibold mt-0.5">${esc(student.regNo)}</p>
+            <p class="text-xs text-slate-500 mt-1">${esc(student.email)}${student.phone ? ` • <span class="font-code text-[#4F46E5]">${esc(student.phone)}</span>` : ''}</p>
+
+            <div class="mt-5 pt-4 border-t border-indigo-100 flex items-center justify-around text-xs font-code">
+              <div>
+                <span class="text-slate-400 block">Department</span>
+                <span class="text-[#1E1B4B] font-semibold block mt-0.5">${esc(student.department || '—')}</span>
+              </div>
+              <div class="w-[1px] h-7 bg-indigo-100"></div>
+              <div>
+                <span class="text-slate-400 block">Year &amp; Sec</span>
+                <span class="text-[#1E1B4B] font-semibold block mt-0.5">${esc(student.year)} • ${esc(student.section)}</span>
+              </div>
+              <div class="w-[1px] h-7 bg-indigo-100"></div>
+              <div>
+                <span class="text-slate-400 block">Attendance</span>
+                <span class="text-[#4F46E5] font-bold block mt-0.5">${Number(student.attendance ?? 0)}%</span>
               </div>
             </div>
-            <button id="changeAvatarBtn" type="button" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#4A90E2] border-2 border-white text-white flex items-center justify-center">
-              <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+          </section>
+
+          <section class="student-card p-5 space-y-4">
+            <h3 class="font-headline text-base font-bold text-[#1E1B4B] border-b border-indigo-100 pb-2.5">Update Password</h3>
+            <form id="updatePwdForm" class="space-y-3">
+              <div class="relative flex items-center">
+                <input id="curPwd" type="password" required placeholder="Current password" class="glass-input w-full pl-3.5 pr-10 py-2.5 text-xs font-code" />
+                <button type="button" data-eye-for="curPwd" class="btn-3d absolute right-2 text-slate-400 hover:text-[#1E1B4B]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+              </div>
+              <div class="relative flex items-center">
+                <input id="newPwd" type="password" required minlength="6" placeholder="New password (min 6 chars)" class="glass-input w-full pl-3.5 pr-10 py-2.5 text-xs font-code" />
+                <button type="button" data-eye-for="newPwd" class="btn-3d absolute right-2 text-slate-400 hover:text-[#1E1B4B]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+              </div>
+              <div class="relative flex items-center">
+                <input id="confPwd" type="password" required minlength="6" placeholder="Confirm new password" class="glass-input w-full pl-3.5 pr-10 py-2.5 text-xs font-code" />
+                <button type="button" data-eye-for="confPwd" class="btn-3d absolute right-2 text-slate-400 hover:text-[#1E1B4B]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+              </div>
+              <button type="submit" class="btn-3d w-full py-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white font-label font-semibold text-xs shadow-sm">Update Password</button>
+            </form>
+          </section>
+
+          <div class="space-y-2.5">
+            <button id="studentSignOutBtn" type="button" class="btn-3d w-full py-2.5 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-600 hover:text-white text-rose-600 font-label font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+              <span>Sign Out</span>
             </button>
           </div>
-          <h2 class="font-headline text-headline-sm text-[#172B4D]">${esc(student.name)}</h2>
-          <p class="font-code text-xs text-neon-purple font-medium mt-0.5">${esc(student.regNo)}</p>
-          <p class="text-xs text-[#64748B]/70 mt-1">${esc(student.email)}${student.phone ? ` • <span class="font-code text-neon-purple">${esc(student.phone)}</span>` : ''}</p>
+        </main>
 
-          <div class="mt-4 pt-4 border-t border-glass-border flex items-center justify-around text-xs font-code">
-            <div>
-              <span class="text-[#64748B]/50 block">Department</span>
-              <span class="text-[#172B4D] font-semibold block mt-0.5">${esc(student.department || '—')}</span>
-            </div>
-            <div class="w-[1px] h-6 bg-glass-border"></div>
-            <div>
-              <span class="text-[#64748B]/50 block">Year &amp; Sec</span>
-              <span class="text-[#172B4D] font-semibold block mt-0.5">${esc(student.year)} • ${esc(student.section)}</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="p-5 rounded-xl bg-white/75 border border-glass-border space-y-4">
-          <h3 class="font-headline text-title-md text-[#172B4D] border-b border-glass-border pb-2.5">Update Password</h3>
-          <form id="updatePwdForm" class="space-y-3">
-            <div class="relative flex items-center">
-              <input id="curPwd" type="password" required placeholder="Current password" class="w-full pl-3 pr-10 py-2 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-xs font-code outline-none focus:border-[#4A90E2]" />
-              <button type="button" data-eye-for="curPwd" class="absolute right-2 text-[#64748B]/60 hover:text-[#172B4D]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
-            </div>
-            <div class="relative flex items-center">
-              <input id="newPwd" type="password" required minlength="6" placeholder="New password (min 6 chars)" class="w-full pl-3 pr-10 py-2 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-xs font-code outline-none focus:border-[#4A90E2]" />
-              <button type="button" data-eye-for="newPwd" class="absolute right-2 text-[#64748B]/60 hover:text-[#172B4D]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
-            </div>
-            <div class="relative flex items-center">
-              <input id="confPwd" type="password" required minlength="6" placeholder="Confirm new password" class="w-full pl-3 pr-10 py-2 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-xs font-code outline-none focus:border-[#4A90E2]" />
-              <button type="button" data-eye-for="confPwd" class="absolute right-2 text-[#64748B]/60 hover:text-[#172B4D]"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
-            </div>
-            <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-xs">Update Password</button>
-          </form>
-        </section>
-
-        <div class="space-y-2.5">
-          <button id="studentSignOutBtn" type="button" class="w-full py-2.5 rounded-lg bg-error/15 border border-error/40 hover:bg-error/25 text-error font-label text-xs flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-[18px]">logout</span>
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </main>
-
-      ${renderStudentBottomNav('student/profile')}
+        ${renderStudentBottomNav('student/profile')}
+      </div>
     </div>
   `;
 

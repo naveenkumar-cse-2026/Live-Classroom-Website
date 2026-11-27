@@ -23,188 +23,194 @@ export function renderAuthView(container) {
   const domain = settings.domain || 'college.edu';
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame flex flex-col justify-between p-5 min-h-screen">
-      <!-- Top Brand Header -->
-      <header class="pt-6 pb-2 text-center space-y-3">
-        <div class="flex justify-center mb-1">${renderSyncPill()}</div>
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] p-[1.5px] shadow-[0_0_30px_rgba(74,144,226,0.4)] mx-auto">
-          <div class="w-full h-full rounded-2xl bg-white flex items-center justify-center overflow-hidden">
-            ${settings.logoDataUrl
-              ? `<img src="${esc(settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Crest" />`
-              : `<span class="material-symbols-outlined text-[34px] text-neon-purple animate-pulse">psychology</span>`}
-          </div>
-        </div>
-
-        <div>
-          <h1 class="font-headline text-headline-lg-mobile text-[#172B4D] tracking-wide">${esc(settings.shortName || 'Live AI Classroom')}</h1>
-          <p class="text-body-sm text-[#64748B]/70 text-xs mt-1">${esc(settings.collegeName || 'Academic Learning Portal')}</p>
-        </div>
-
-        <!-- Segmented Tab -->
-        <div class="p-1 rounded-xl bg-[#E6F4FF] border border-[#4A90E2]/20 flex max-w-xs mx-auto mt-4">
-          <button id="loginTabBtn" type="button" class="flex-1 py-2 rounded-lg bg-[#4A90E2] text-white text-xs font-label shadow-[0_0_12px_rgba(74,144,226,0.2)] transition-all">
-            Student Sign In
-          </button>
-          <button id="registerTabBtn" type="button" class="flex-1 py-2 rounded-lg text-[#64748B] hover:text-[#172B4D] text-xs font-label transition-all">
-            New Registration
-          </button>
-        </div>
-      </header>
-
-      <!-- Main Form Container -->
-      <main class="my-auto py-4">
-        <!-- STUDENT LOGIN PANEL -->
-        <div id="loginPanel" class="p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
-          <div class="border-b border-glass-border pb-3 flex items-center justify-between">
-            <div>
-              <h2 class="font-headline text-title-lg text-[#172B4D]">Student Access</h2>
-              <p class="text-body-sm text-[#64748B]/65 text-xs">Sign in with your registered credentials</p>
+    <div class="theme-student min-h-screen">
+      <div class="student-shell-narrow flex flex-col justify-between p-5 min-h-screen">
+        <!-- Top Brand Header -->
+        <header class="pt-6 pb-2 text-center space-y-3">
+          <div class="flex justify-center mb-1">${renderSyncPill()}</div>
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#2563EB] via-[#4F46E5] to-[#7C3AED] p-[2px] shadow-md mx-auto">
+            <div class="w-full h-full rounded-[14px] bg-white flex items-center justify-center overflow-hidden">
+              ${settings.logoDataUrl
+                ? `<img src="${esc(settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Crest" />`
+                : `<span class="material-symbols-outlined text-[30px] text-[#4F46E5]">school</span>`}
             </div>
-            <span class="material-symbols-outlined text-neon-purple text-[22px]">lock</span>
           </div>
 
-          <div id="studentLoginError" role="alert" class="hidden p-3 rounded-lg bg-error/15 border border-error/45 text-rose-200 text-xs font-label flex items-center gap-2">
-            <span class="material-symbols-outlined text-[16px] text-error shrink-0">error</span>
-            <span id="studentLoginErrorText"></span>
+          <div>
+            <h1 class="font-headline text-2xl font-bold text-[#1E1B4B] tracking-tight">${esc(settings.shortName || 'Live AI Classroom')}</h1>
+            <p class="text-slate-500 text-xs mt-1">${esc(settings.collegeName || 'Academic Learning Portal')}</p>
           </div>
 
-          <form id="studentLoginForm" novalidate class="space-y-4">
-            <div>
-              <label for="loginIdentifier" class="block text-label-md text-[#64748B] mb-1.5">Register No., Email, or Full Name</label>
-              <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">badge</span>
-                <input id="loginIdentifier" type="text" autocomplete="username" placeholder="Enter register no., email, or name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
-              </div>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="loginPassword" class="block text-label-md text-[#64748B]">Password</label>
-                <button id="forgotPwdBtn" type="button" class="text-xs font-code text-neon-purple hover:underline">Forgot?</button>
-              </div>
-              <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">key</span>
-                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
-                <button id="togglePwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D] hover:bg-[#F0F8FF] active:scale-95 transition-all touch-manipulation">
-                  <span class="material-symbols-outlined text-[20px]">visibility</span>
-                </button>
-              </div>
-            </div>
-
-            <button id="studentLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-sm shadow-[0_0_24px_rgba(74,144,226,0.45)] hover:shadow-[0_0_32px_rgba(74,144,226,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-[#4A90E2]/50 disabled:opacity-60 disabled:cursor-not-allowed">
-              <span id="studentLoginBtnIcon" class="material-symbols-outlined text-[18px]">login</span>
-              <span id="studentLoginBtnText">Sign In to Student Portal</span>
+          <!-- Segmented Tab -->
+          <div class="p-1 rounded-xl bg-white border border-indigo-100 shadow-xs flex max-w-xs mx-auto mt-4">
+            <button id="loginTabBtn" type="button" class="btn-3d flex-1 py-2 rounded-lg bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white text-xs font-label font-semibold shadow-sm transition-all">
+              Student Sign In
             </button>
-          </form>
-
-          <div class="pt-3 border-t border-glass-border text-center">
-            <a href="#admin/login" class="inline-flex items-center gap-1.5 text-xs font-label text-[#64748B]/80 hover:text-neon-purple transition-colors">
-              <span class="material-symbols-outlined text-[15px] text-neon-purple">admin_panel_settings</span>
-              <span>Administrator Login →</span>
-            </a>
+            <button id="registerTabBtn" type="button" class="btn-3d flex-1 py-2 rounded-lg text-slate-500 hover:text-[#1E1B4B] text-xs font-label transition-all">
+              New Registration
+            </button>
           </div>
-        </div>
+        </header>
 
-        <!-- STUDENT REGISTER PANEL -->
-        <div id="registerPanel" class="hidden p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
-          <div class="border-b border-glass-border pb-3 flex items-center justify-between">
-            <div>
-              <h2 class="font-headline text-title-lg text-[#172B4D]">Student Registration</h2>
-              <p class="text-body-sm text-[#64748B]/65 text-xs">Create your student account</p>
-            </div>
-            <span class="material-symbols-outlined text-neon-purple text-[22px]">how_to_reg</span>
-          </div>
-
-          <div id="studentRegError" role="alert" class="hidden p-3 rounded-lg bg-error/15 border border-error/45 text-rose-200 text-xs font-label flex items-center gap-2">
-            <span class="material-symbols-outlined text-[16px] text-error shrink-0">error</span>
-            <span id="studentRegErrorText"></span>
-          </div>
-
-          <form id="studentRegisterForm" class="space-y-3.5">
-            <div>
-              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Full Name</label>
-              <input id="regName" type="text" required placeholder="Enter full name" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
-            </div>
-
-            <div>
-              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Institutional Email</label>
-              <input id="regEmail" type="email" required placeholder="student@${esc(domain)}" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
-            </div>
-
-            <div>
-              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Phone Number</label>
-              <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" pattern="[0-9+\-\s()]{7,15}" class="w-full px-3.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
-            </div>
-
-            <div class="grid grid-cols-2 gap-2.5">
+        <!-- Main Form Container -->
+        <main class="my-auto py-4">
+          <!-- STUDENT LOGIN PANEL -->
+          <div id="loginPanel" class="student-card card-3d p-6 space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
               <div>
-                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Register Number</label>
-                <input id="regNo" type="text" required placeholder="Enter register no." class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
+                <h2 class="font-headline text-lg font-bold text-[#1E1B4B]">Student Access</h2>
+                <p class="text-slate-500 text-xs">Sign in with your registered credentials</p>
               </div>
-              <div>
-                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Section</label>
-                <input id="regSection" type="text" value="Sec A" placeholder="e.g. Sec A" class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none" />
-              </div>
+              <span class="w-9 h-9 rounded-xl bg-indigo-50 text-[#4F46E5] flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">lock</span>
+              </span>
             </div>
 
-            <div class="grid grid-cols-2 gap-2.5">
+            <div id="studentLoginError" role="alert" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-label flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-rose-600 shrink-0">error</span>
+              <span id="studentLoginErrorText"></span>
+            </div>
+
+            <form id="studentLoginForm" novalidate class="space-y-4">
               <div>
-                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Department</label>
-                ${departments.length > 0 ? `
-                  <select id="regDept" required class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
-                    <option value="">Select department</option>
-                    ${departments.map((d) => `<option value="${esc(d.shortName || d.name)}">${esc(d.shortName || d.name)}</option>`).join('')}
+                <label for="loginIdentifier" class="block text-xs font-semibold text-slate-600 mb-1.5">Register No., Email, or Full Name</label>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[18px] pointer-events-none">badge</span>
+                  <input id="loginIdentifier" type="text" autocomplete="username" placeholder="Enter register no., email, or name" class="glass-input w-full pl-10 pr-4 py-2.5 text-sm font-code placeholder-slate-400" />
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label for="loginPassword" class="block text-xs font-semibold text-slate-600">Password</label>
+                  <button id="forgotPwdBtn" type="button" class="text-xs font-code text-[#4F46E5] hover:underline">Forgot?</button>
+                </div>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[18px] pointer-events-none">key</span>
+                  <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="glass-input w-full pl-10 pr-12 py-2.5 text-sm font-code placeholder-slate-400" />
+                  <button id="togglePwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="btn-3d absolute right-1.5 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#1E1B4B] hover:bg-slate-100 touch-manipulation">
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <button id="studentLoginSubmitBtn" type="submit" class="btn-3d w-full py-3 rounded-xl bg-gradient-to-r from-[#2563EB] via-[#4F46E5] to-[#7C3AED] text-white font-label font-semibold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span id="studentLoginBtnIcon" class="material-symbols-outlined text-[18px]">login</span>
+                <span id="studentLoginBtnText">Sign In to Student Portal</span>
+              </button>
+            </form>
+
+            <div class="pt-3 border-t border-slate-100 text-center">
+              <a href="#admin/login" class="inline-flex items-center gap-1.5 text-xs font-label text-slate-500 hover:text-[#2563EB] transition-colors">
+                <span class="material-symbols-outlined text-[15px] text-[#2563EB]">admin_panel_settings</span>
+                <span>Administrator Login →</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- STUDENT REGISTER PANEL -->
+          <div id="registerPanel" class="hidden student-card card-3d p-6 space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div>
+                <h2 class="font-headline text-lg font-bold text-[#1E1B4B]">Student Registration</h2>
+                <p class="text-slate-500 text-xs">Create your student account</p>
+              </div>
+              <span class="w-9 h-9 rounded-xl bg-indigo-50 text-[#4F46E5] flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+              </span>
+            </div>
+
+            <div id="studentRegError" role="alert" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-label flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-rose-600 shrink-0">error</span>
+              <span id="studentRegErrorText"></span>
+            </div>
+
+            <form id="studentRegisterForm" class="space-y-3.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+                <input id="regName" type="text" required placeholder="Enter full name" class="glass-input w-full px-3.5 py-2 text-xs placeholder-slate-400" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Institutional Email</label>
+                <input id="regEmail" type="email" required placeholder="student@${esc(domain)}" class="glass-input w-full px-3.5 py-2 text-xs placeholder-slate-400" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
+                <input id="regPhone" type="tel" autocomplete="tel" placeholder="e.g. +91 9876543210" pattern="[0-9+\-\s()]{7,15}" class="glass-input w-full px-3.5 py-2 text-xs placeholder-slate-400" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Register Number</label>
+                  <input id="regNo" type="text" required placeholder="Enter register no." class="glass-input w-full px-3 py-2 text-xs font-code placeholder-slate-400" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Section</label>
+                  <input id="regSection" type="text" value="Sec A" placeholder="e.g. Sec A" class="glass-input w-full px-3 py-2 text-xs" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Department</label>
+                  ${departments.length > 0 ? `
+                    <select id="regDept" required class="glass-input w-full px-2.5 py-2 text-xs">
+                      <option value="">Select department</option>
+                      ${departments.map((d) => `<option value="${esc(d.shortName || d.name)}">${esc(d.shortName || d.name)}</option>`).join('')}
+                    </select>
+                  ` : `
+                    <input id="regDept" type="text" required placeholder="Enter department" class="glass-input w-full px-3 py-2 text-xs" />
+                  `}
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Year</label>
+                  <select id="regYear" class="glass-input w-full px-2.5 py-2 text-xs">
+                    <option>Year 1</option>
+                    <option>Year 2</option>
+                    <option>Year 3</option>
+                    <option>Year 4</option>
                   </select>
-                ` : `
-                  <input id="regDept" type="text" required placeholder="Enter department" class="w-full px-3 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none" />
-                `}
+                </div>
               </div>
+
+              ${programs.length > 0 ? `
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Academic Program</label>
+                  <select id="regProgram" class="glass-input w-full px-2.5 py-2 text-xs">
+                    <option value="">Select program</option>
+                    ${programs.map((p) => `<option value="${esc(p.code ? `${p.code} — ${p.name}` : p.name)}">${esc(p.code ? `${p.code} — ${p.name}` : p.name)}</option>`).join('')}
+                  </select>
+                </div>
+              ` : ''}
+
               <div>
-                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Year</label>
-                <select id="regYear" class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
-                  <option>Year 1</option>
-                  <option>Year 2</option>
-                  <option>Year 3</option>
-                  <option>Year 4</option>
-                </select>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Create Password</label>
+                <div class="relative flex items-center">
+                  <input id="regPassword" type="password" required minlength="6" placeholder="Minimum 6 characters" class="glass-input w-full pl-3.5 pr-11 py-2 text-xs font-code placeholder-slate-400" />
+                  <button id="toggleRegPwdBtn" type="button" aria-label="Show password" class="btn-3d absolute right-1.5 w-8 h-8 rounded flex items-center justify-center text-slate-400 hover:text-[#1E1B4B]">
+                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            ${programs.length > 0 ? `
-              <div>
-                <label class="block text-label-md text-[#64748B] mb-1 text-xs">Academic Program</label>
-                <select id="regProgram" class="w-full px-2.5 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs focus:border-[#4A90E2] outline-none">
-                  <option value="">Select program</option>
-                  ${programs.map((p) => `<option value="${esc(p.code ? `${p.code} — ${p.name}` : p.name)}">${esc(p.code ? `${p.code} — ${p.name}` : p.name)}</option>`).join('')}
-                </select>
-              </div>
-            ` : ''}
+              <button id="studentRegSubmitBtn" type="submit" class="btn-3d w-full py-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] via-[#4F46E5] to-[#7C3AED] text-white font-label font-semibold text-xs shadow-md flex items-center justify-center gap-1.5 mt-2 disabled:opacity-60">
+                <span class="material-symbols-outlined text-[16px]">verified_user</span>
+                <span id="studentRegBtnText">Register &amp; Sign In</span>
+              </button>
+            </form>
+          </div>
+        </main>
 
-            <div>
-              <label class="block text-label-md text-[#64748B] mb-1 text-xs">Create Password</label>
-              <div class="relative flex items-center">
-                <input id="regPassword" type="password" required minlength="6" placeholder="Minimum 6 characters" class="w-full pl-3.5 pr-11 py-2 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-xs font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] outline-none" />
-                <button id="toggleRegPwdBtn" type="button" aria-label="Show password" class="absolute right-1.5 w-8 h-8 rounded flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D]">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-              </div>
-            </div>
-
-            <button id="studentRegSubmitBtn" type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-xs shadow-[0_0_20px_rgba(74,144,226,0.2)] flex items-center justify-center gap-1.5 border border-[#4A90E2]/50 mt-2 active:scale-[0.98] transition-transform disabled:opacity-60">
-              <span class="material-symbols-outlined text-[16px]">verified_user</span>
-              <span id="studentRegBtnText">Register &amp; Sign In</span>
-            </button>
-          </form>
-        </div>
-      </main>
-
-      <footer class="text-center pt-2 pb-4 space-y-1">
-        <p class="font-code text-[11px] text-[#64748B]/50 flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[14px] text-neon-purple">shield</span>
-          PBKDF2-SHA256 Secured University Authentication
-        </p>
-        <p class="text-[10px] text-[#172B4D]/30">${esc(settings.collegeName || 'Live AI Classroom')} • ${esc(settings.aiEngineVersion)}</p>
-      </footer>
+        <footer class="text-center pt-2 pb-4 space-y-1">
+          <p class="font-code text-[11px] text-slate-400 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[14px] text-[#4F46E5]">shield</span>
+            PBKDF2-SHA256 Secured University Authentication
+          </p>
+          <p class="text-[10px] text-slate-400">${esc(settings.collegeName || 'Live AI Classroom')} • ${esc(settings.aiEngineVersion)}</p>
+        </footer>
+      </div>
     </div>
   `;
 
@@ -214,20 +220,22 @@ export function renderAuthView(container) {
   const registerTabBtn = container.querySelector('#registerTabBtn');
 
   function showTab(tab) {
+    const activeCls = ['bg-gradient-to-r', 'from-[#2563EB]', 'to-[#4F46E5]', 'text-white', 'font-semibold', 'shadow-sm'];
+    const inactiveCls = ['text-slate-500', 'hover:text-[#1E1B4B]'];
     if (tab === 'login') {
       loginPanel.classList.remove('hidden');
       registerPanel.classList.add('hidden');
-      loginTabBtn.classList.add('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
-      loginTabBtn.classList.remove('text-[#64748B]');
-      registerTabBtn.classList.remove('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
-      registerTabBtn.classList.add('text-[#64748B]');
+      loginTabBtn.classList.add(...activeCls);
+      loginTabBtn.classList.remove(...inactiveCls);
+      registerTabBtn.classList.remove(...activeCls);
+      registerTabBtn.classList.add(...inactiveCls);
     } else {
       loginPanel.classList.add('hidden');
       registerPanel.classList.remove('hidden');
-      registerTabBtn.classList.add('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
-      registerTabBtn.classList.remove('text-[#64748B]');
-      loginTabBtn.classList.remove('bg-neon-purple', 'text-[#172B4D]', 'shadow-[0_0_12px_rgba(74,144,226,0.2)]');
-      loginTabBtn.classList.add('text-[#64748B]');
+      registerTabBtn.classList.add(...activeCls);
+      registerTabBtn.classList.remove(...inactiveCls);
+      loginTabBtn.classList.remove(...activeCls);
+      loginTabBtn.classList.add(...inactiveCls);
     }
   }
 
@@ -371,76 +379,78 @@ export function renderAdminLoginView(container) {
   }
 
   container.innerHTML = `
-    <div class="student-shell student-shell-frame flex flex-col justify-between p-5 min-h-screen">
-      <header class="pt-8 pb-2 text-center space-y-3">
-        <div class="flex justify-center mb-1">${renderSyncPill()}</div>
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] p-[1.5px] shadow-[0_0_30px_rgba(74,144,226,0.4)] mx-auto">
-          <div class="w-full h-full rounded-2xl bg-white flex items-center justify-center">
-            <span class="material-symbols-outlined text-[34px] text-neon-purple">admin_panel_settings</span>
+    <div class="theme-admin min-h-screen">
+      <div class="student-shell-narrow flex flex-col justify-between p-5 min-h-screen">
+        <header class="pt-8 pb-2 text-center space-y-3">
+          <div class="flex justify-center mb-1">${renderSyncPill()}</div>
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0F172A] text-white shadow-md mx-auto">
+            <span class="material-symbols-outlined text-[28px]">admin_panel_settings</span>
           </div>
-        </div>
-        <div>
-          <h1 class="font-headline text-headline-lg-mobile text-[#172B4D] tracking-wide">Administrator Console</h1>
-          <p class="text-body-sm text-[#64748B]/70 text-xs mt-1">${esc(settings.collegeName || 'Live AI Classroom PRO')}</p>
-        </div>
-      </header>
-
-      <main class="my-auto py-4">
-        <div class="p-6 rounded-2xl bg-white/85 border border-[#4A90E2]/20 backdrop-blur-xl shadow-[0_8px_36px_rgba(74,144,226,0.1)] space-y-4 animate-enter">
-          <div class="border-b border-glass-border pb-3 flex items-center justify-between">
-            <div>
-              <h2 class="font-headline text-title-lg text-[#172B4D]">Secure Admin Sign In</h2>
-              <p class="text-xs text-[#64748B]/65">Restricted to authorized administrators only</p>
-            </div>
-            <span class="material-symbols-outlined text-neon-purple text-[22px]">verified_user</span>
+          <div>
+            <h1 class="font-headline text-2xl font-bold text-[#0F172A] tracking-tight">Administrator Console</h1>
+            <p class="text-slate-500 text-xs mt-1">${esc(settings.collegeName || 'Live AI Classroom PRO')}</p>
           </div>
+        </header>
 
-          <div id="adminLoginError" role="alert" class="hidden p-3 rounded-lg bg-error/15 border border-error/45 text-rose-200 text-xs font-label flex items-center gap-2">
-            <span class="material-symbols-outlined text-[16px] text-error shrink-0">error</span>
-            <span id="adminLoginErrorText"></span>
-          </div>
-
-          <form id="adminLoginForm" novalidate class="space-y-4">
-            <div>
-              <label for="adminNameInput" class="block text-label-md text-[#64748B] mb-1.5">Administrator Name</label>
-              <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">person</span>
-                <input id="adminNameInput" type="text" autocomplete="username" placeholder="Enter administrator name" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/85 border border-glass-border text-[#172B4D] text-sm placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
+        <main class="my-auto py-4">
+          <div class="admin-card card-3d p-6 space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div>
+                <h2 class="font-headline text-lg font-bold text-[#0F172A]">Secure Admin Sign In</h2>
+                <p class="text-xs text-slate-500">Restricted to authorized administrators only</p>
               </div>
+              <span class="w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">verified_user</span>
+              </span>
             </div>
 
-            <div>
-              <label for="adminPwdInput" class="block text-label-md text-[#64748B] mb-1.5">Administrator Password</label>
-              <div class="relative flex items-center">
-                <span class="material-symbols-outlined absolute left-3.5 text-[#64748B]/60 text-[18px] pointer-events-none">key</span>
-                <input id="adminPwdInput" type="password" autocomplete="current-password" placeholder="Enter administrator password" class="w-full pl-10 pr-12 py-2.5 rounded-lg bg-white/90 border border-[#4A90E2]/25 text-[#172B4D] text-sm font-code placeholder-[#64748B]/50 focus:border-[#4A90E2] focus:ring-1 focus:ring-[#4A90E2]/30 outline-none transition-all" />
-                <button id="toggleAdminPwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="absolute right-1.5 w-9 h-9 rounded-md flex items-center justify-center text-[#64748B]/70 hover:text-[#172B4D] hover:bg-[#F0F8FF] active:scale-95 transition-all touch-manipulation">
-                  <span class="material-symbols-outlined text-[20px]">visibility</span>
-                </button>
+            <div id="adminLoginError" role="alert" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-label flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-rose-600 shrink-0">error</span>
+              <span id="adminLoginErrorText"></span>
+            </div>
+
+            <form id="adminLoginForm" novalidate class="space-y-4">
+              <div>
+                <label for="adminNameInput" class="block text-xs font-semibold text-slate-600 mb-1.5">Administrator Name</label>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[18px] pointer-events-none">person</span>
+                  <input id="adminNameInput" type="text" autocomplete="username" placeholder="Enter administrator name" class="glass-input w-full pl-10 pr-4 py-2.5 text-sm placeholder-slate-400" />
+                </div>
               </div>
+
+              <div>
+                <label for="adminPwdInput" class="block text-xs font-semibold text-slate-600 mb-1.5">Administrator Password</label>
+                <div class="relative flex items-center">
+                  <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[18px] pointer-events-none">key</span>
+                  <input id="adminPwdInput" type="password" autocomplete="current-password" placeholder="Enter administrator password" class="glass-input w-full pl-10 pr-12 py-2.5 text-sm font-code placeholder-slate-400" />
+                  <button id="toggleAdminPwdBtn" type="button" aria-label="Show password" aria-pressed="false" class="btn-3d absolute right-1.5 w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#0F172A] hover:bg-slate-100 touch-manipulation">
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <button id="adminLoginSubmitBtn" type="submit" class="btn-3d w-full py-3 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white font-label font-semibold text-sm shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span id="adminLoginBtnIcon" class="material-symbols-outlined text-[18px]">shield_person</span>
+                <span id="adminLoginBtnText">Sign In as Administrator</span>
+              </button>
+            </form>
+
+            <div class="pt-3 border-t border-slate-100 text-center">
+              <a href="#auth" class="inline-flex items-center gap-1.5 text-xs font-label text-slate-500 hover:text-[#2563EB] transition-colors">
+                <span class="material-symbols-outlined text-[15px] text-[#2563EB]">arrow_back</span>
+                <span>Back to Student Portal Login</span>
+              </a>
             </div>
-
-            <button id="adminLoginSubmitBtn" type="submit" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white font-label text-sm shadow-[0_0_24px_rgba(74,144,226,0.45)] hover:shadow-[0_0_32px_rgba(74,144,226,0.7)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-[#4A90E2]/50 disabled:opacity-60 disabled:cursor-not-allowed">
-              <span id="adminLoginBtnIcon" class="material-symbols-outlined text-[18px]">shield_person</span>
-              <span id="adminLoginBtnText">Sign In as Administrator</span>
-            </button>
-          </form>
-
-          <div class="pt-3 border-t border-glass-border text-center">
-            <a href="#auth" class="inline-flex items-center gap-1.5 text-xs font-label text-[#64748B]/80 hover:text-[#172B4D] transition-colors">
-              <span class="material-symbols-outlined text-[15px] text-neon-purple">arrow_back</span>
-              <span>Back to Student Portal Login</span>
-            </a>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <footer class="text-center pt-2 pb-4 space-y-1">
-        <p class="font-code text-[11px] text-[#64748B]/50 flex items-center justify-center gap-1">
-          <span class="material-symbols-outlined text-[14px] text-neon-purple">shield</span>
-          Backend PBKDF2-SHA256 Verified Admin Access
-        </p>
-      </footer>
+        <footer class="text-center pt-2 pb-4 space-y-1">
+          <p class="font-code text-[11px] text-slate-400 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-[14px] text-[#2563EB]">shield</span>
+            Backend PBKDF2-SHA256 Verified Admin Access
+          </p>
+        </footer>
+      </div>
     </div>
   `;
 

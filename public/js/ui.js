@@ -43,12 +43,37 @@ if (typeof window !== 'undefined') {
   window.showToast = showToast;
 }
 
+export function init3DTilt(root = document) {
+  if (typeof window === 'undefined' || !root) return;
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches;
+  if (reduced || !finePointer) return;
+
+  root.querySelectorAll('.card-3d').forEach((card) => {
+    if (card.dataset.tiltBound === '1') return;
+    card.dataset.tiltBound = '1';
+    card.addEventListener('pointermove', (e) => {
+      const rect = card.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      const maxDeg = 4;
+      card.style.setProperty('--rx', `${(-y * maxDeg).toFixed(2)}deg`);
+      card.style.setProperty('--ry', `${(x * maxDeg).toFixed(2)}deg`);
+    });
+    card.addEventListener('pointerleave', () => {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+    });
+  });
+}
+
 export function openModal(html, onBind, maxWidthClass = 'max-w-2xl') {
   const host = document.getElementById('modal-host');
   if (!host) return;
   host.innerHTML = `
-    <div id="activeModalBackdrop" class="fixed inset-0 z-[60] bg-[#172B4D]/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div class="w-full ${maxWidthClass} my-auto animate-enter">${html}</div>
+    <div id="activeModalBackdrop" class="modal-backdrop-enter fixed inset-0 z-[60] bg-[#0F172A]/45 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div id="activeModalPanel" class="modal-panel-enter w-full ${maxWidthClass} my-auto">${html}</div>
     </div>
   `;
   const backdrop = document.getElementById('activeModalBackdrop');
@@ -63,7 +88,22 @@ export function openModal(html, onBind, maxWidthClass = 'max-w-2xl') {
 
 export function closeModal() {
   const host = document.getElementById('modal-host');
-  if (host) host.innerHTML = '';
+  if (!host) return;
+  const backdrop = document.getElementById('activeModalBackdrop');
+  const panel = document.getElementById('activeModalPanel');
+  if (!backdrop || !panel) {
+    host.innerHTML = '';
+    return;
+  }
+  backdrop.classList.remove('modal-backdrop-enter');
+  backdrop.classList.add('modal-backdrop-exit');
+  panel.classList.remove('modal-panel-enter');
+  panel.classList.add('modal-panel-exit');
+  setTimeout(() => {
+    if (document.getElementById('activeModalBackdrop') === backdrop) {
+      host.innerHTML = '';
+    }
+  }, 145);
 }
 
 /**
@@ -123,8 +163,8 @@ export function renderSyncPill() {
     ? 'Connected to Supabase PostgreSQL Real-Time Cloud'
     : (connected ? 'Connected to Live Server' : 'Real-Time Cross-Tab Local Sync Active');
   return `
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4A90E2]/8 border border-glass-border font-code text-[10px] text-[#64748B]/80" title="${title}">
-      <span class="w-1.5 h-1.5 rounded-full ${isRealtime ? 'bg-[#22C55E] animate-pulse shadow-[0_0_6px_#22C55E]' : (connected ? 'bg-success animate-pulse' : 'bg-neon-purple animate-pulse')}"></span>
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/90 font-code text-[10px] text-slate-600" title="${title}">
+      <span class="w-1.5 h-1.5 rounded-full ${isRealtime ? 'bg-emerald-500 animate-pulse' : (connected ? 'bg-emerald-500 animate-pulse' : 'bg-[#2563EB] animate-pulse')}"></span>
       ${label} • r${rev}
     </span>
   `;
@@ -135,30 +175,29 @@ export function renderStudentBottomNav(activeRoute) {
     const isActive = activeRoute === route;
     if (isActive) {
       return `
-        <a href="#${route}" class="flex flex-col items-center gap-1 text-neon-purple">
-          <div class="relative">
-            <span class="material-symbols-outlined text-[24px]">${icon}</span>
-            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-neon-purple shadow-[0_0_8px_rgba(74,144,226,0.4)]"></span>
-          </div>
+        <a href="#${route}" class="btn-3d flex flex-col items-center gap-0.5 py-1 rounded-xl bg-gradient-to-r from-[#2563EB]/10 to-[#7C3AED]/10 text-[#4F46E5]">
+          <span class="material-symbols-outlined text-[22px]">${icon}</span>
           <span class="text-[11px] font-label font-semibold">${label}</span>
         </a>
       `;
     }
     return `
-      <a href="#${route}" class="flex flex-col items-center gap-1 text-[#64748B]/60 hover:text-[#172B4D] transition-colors">
-        <span class="material-symbols-outlined text-[24px]">${icon}</span>
+      <a href="#${route}" class="btn-3d flex flex-col items-center gap-0.5 py-1 rounded-xl text-slate-500 hover:text-[#1E1B4B] hover:bg-indigo-50/60 transition-colors">
+        <span class="material-symbols-outlined text-[22px]">${icon}</span>
         <span class="text-[11px] font-label">${label}</span>
       </a>
     `;
   };
 
   return `
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-50 bg-white/85 backdrop-blur-xl border-t border-[#4A90E2]/10 px-4 py-2.5 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-      <div class="grid grid-cols-4 items-center text-center">
-        ${item('student/home', 'home', 'Home')}
-        ${item('student/vault', 'menu_book', 'Vault')}
-        ${item('student/assignments', 'campaign', 'Notices')}
-        ${item('student/profile', 'person', 'Profile')}
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[960px] z-50 px-3 pb-2 pointer-events-none">
+      <div class="pointer-events-auto max-w-md mx-auto bg-white/95 backdrop-blur-xl border border-indigo-100 rounded-2xl px-3 py-2 shadow-[0_10px_30px_-8px_rgba(79,70,229,0.2)]">
+        <div class="grid grid-cols-4 gap-1 items-center text-center">
+          ${item('student/home', 'home', 'Home')}
+          ${item('student/vault', 'menu_book', 'Vault')}
+          ${item('student/assignments', 'campaign', 'Notices')}
+          ${item('student/profile', 'person', 'Profile')}
+        </div>
       </div>
     </nav>
   `;
@@ -175,75 +214,76 @@ export function renderAdminSidebar(activeRoute) {
   const navLink = (route, icon, label, badge = null) => {
     const active = activeRoute === route;
     return `
-      <a href="#${route}" data-admin-nav class="flex items-center justify-between px-3 py-2.5 rounded-md transition-colors text-sm font-label ${
+      <a href="#${route}" data-admin-nav class="btn-3d relative flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-label ${
         active
-          ? 'bg-[#4A90E2]/10 border border-[#4A90E2]/30 text-[#172B4D] shadow-[0_0_15px_rgba(74,144,226,0.15)]'
-          : 'hover:bg-[#4A90E2]/5 text-[#64748B] hover:text-[#172B4D] border border-transparent'
+          ? 'bg-[#EFF6FF] text-[#1E3A8A] font-semibold border border-[#BFDBFE] shadow-sm'
+          : 'hover:bg-slate-100/80 text-slate-600 hover:text-[#0F172A] border border-transparent'
       }">
+        ${active ? '<span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#2563EB]"></span>' : ''}
         <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined ${active ? 'text-neon-purple' : ''} text-[20px]">${icon}</span>
+          <span class="material-symbols-outlined ${active ? 'text-[#2563EB]' : 'text-slate-400'} text-[20px]">${icon}</span>
           <span>${label}</span>
         </div>
-        ${badge !== null ? `<span class="font-code text-xs px-2 py-0.5 rounded-full ${active ? 'bg-neon-purple/30 border border-[#4A90E2]/35 text-[#64748B]' : 'bg-[#F0F8FF] border border-white/10 text-[#64748B]/70'}">${badge}</span>` : ''}
+        ${badge !== null ? `<span class="font-code text-[11px] px-2 py-0.5 rounded-full ${active ? 'bg-[#2563EB] text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'}">${badge}</span>` : ''}
       </a>
     `;
   };
 
   return `
     <!-- Mobile Drawer Backdrop -->
-    <div id="adminSidebarBackdrop" class="hidden fixed inset-0 z-40 bg-[#172B4D]/30 backdrop-blur-sm lg:hidden"></div>
+    <div id="adminSidebarBackdrop" class="hidden fixed inset-0 z-40 bg-[#0F172A]/35 backdrop-blur-sm lg:hidden"></div>
 
-    <aside id="adminSidebarEl" class="fixed lg:sticky top-0 left-0 z-50 lg:z-30 w-64 shrink-0 h-screen bg-white/85 border-r border-[#4A90E2]/15 shadow-[4px_0_24px_rgba(74,144,226,0.06)] flex flex-col justify-between p-4 overflow-y-auto backdrop-blur-xl transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <aside id="adminSidebarEl" class="admin-sidebar fixed lg:sticky top-0 left-0 z-50 lg:z-30 w-64 shrink-0 h-screen flex flex-col justify-between p-4 overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
       <div class="space-y-6">
-        <div class="flex items-center justify-between px-2 py-1">
+        <div class="flex items-center justify-between px-1.5 py-1">
           <a href="#admin/dashboard" class="flex items-center gap-3 group">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] flex items-center justify-center text-white shadow-[0_0_16px_rgba(74,144,226,0.3)] border border-[#4A90E2]/40 overflow-hidden shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-[#0F172A] flex items-center justify-center text-white shadow-sm overflow-hidden shrink-0">
               ${s.settings.logoDataUrl
                 ? `<img src="${esc(s.settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Logo" />`
-                : `<span class="material-symbols-outlined text-[24px]">school</span>`}
+                : `<span class="material-symbols-outlined text-[22px]">school</span>`}
             </div>
             <div>
-              <span class="font-headline text-lg font-bold text-[#172B4D] tracking-wide block leading-tight">Live AI</span>
-              <span class="font-code text-[11px] text-neon-purple uppercase tracking-wider block">Classroom Pro</span>
+              <span class="font-headline text-base font-bold text-[#0F172A] tracking-tight block leading-tight">Live AI</span>
+              <span class="font-code text-[10px] text-[#2563EB] font-semibold uppercase tracking-wider block">Classroom Pro</span>
             </div>
           </a>
-          <button id="closeMobileSidebarBtn" type="button" class="lg:hidden text-[#64748B] hover:text-[#172B4D] p-1">
+          <button id="closeMobileSidebarBtn" type="button" class="lg:hidden text-slate-400 hover:text-[#0F172A] p-1 rounded-md">
             <span class="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
         <nav class="space-y-1">
-          <div class="px-2 pb-1 text-[11px] font-code uppercase text-[#64748B]/50 tracking-wider">Main Management</div>
+          <div class="px-2 pb-1 text-[10px] font-code font-semibold uppercase text-slate-400 tracking-wider">Main Management</div>
           ${navLink('admin/dashboard', 'dashboard', 'Overview')}
           ${navLink('admin/students', 'group', 'Manage Students', studentCount.toLocaleString())}
           ${navLink('admin/teachers', 'co_present', 'Manage Teachers', teacherCount.toLocaleString())}
           ${navLink('admin/timetable', 'calendar_month', 'Timetable & Events', timetableCount.toLocaleString())}
 
-          <div class="pt-4 px-2 pb-1 text-[11px] font-code uppercase text-[#64748B]/50 tracking-wider">Academic Resources</div>
+          <div class="pt-4 px-2 pb-1 text-[10px] font-code font-semibold uppercase text-slate-400 tracking-wider">Academic Resources</div>
           ${navLink('admin/resources', 'cloud_upload', 'Materials & Notices', resourceCount.toLocaleString())}
 
-          <div class="pt-4 px-2 pb-1 text-[11px] font-code uppercase text-[#64748B]/50 tracking-wider">System Settings</div>
+          <div class="pt-4 px-2 pb-1 text-[10px] font-code font-semibold uppercase text-slate-400 tracking-wider">System Settings</div>
           ${navLink('admin/settings', 'tune', 'College Settings')}
         </nav>
       </div>
 
-      <div class="pt-4 border-t border-glass-border space-y-2.5">
+      <div class="pt-4 border-t border-slate-200 space-y-2.5">
         <div class="flex items-center justify-center">${renderSyncPill()}</div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-[#4A90E2]/5 border border-[#4A90E2]/15 gap-2">
+        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200 gap-2">
           <a href="#admin/settings" class="flex items-center gap-2.5 min-w-0 flex-1 group" title="Configure Admin Profile in College Settings">
-            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#4A90E2] to-[#2563EB] flex items-center justify-center text-white text-xs font-bold font-headline shrink-0">
+            <div class="w-9 h-9 rounded-full bg-[#0F172A] flex items-center justify-center text-white text-xs font-bold font-headline shrink-0">
               ${esc(adminProfile.initials || 'AD')}
             </div>
             <div class="min-w-0">
-              <span class="font-label text-sm text-[#172B4D] font-medium block leading-tight truncate group-hover:text-[#64748B] transition-colors">${esc(adminProfile.name || 'Administrator')}</span>
-              <span class="font-code text-[11px] text-[#64748B]/70 block truncate">${esc(adminProfile.designation || 'System Administrator')}</span>
+              <span class="font-label text-sm text-[#0F172A] font-medium block leading-tight truncate group-hover:text-[#2563EB] transition-colors">${esc(adminProfile.name || 'Administrator')}</span>
+              <span class="font-code text-[11px] text-slate-500 block truncate">${esc(adminProfile.designation || 'System Administrator')}</span>
             </div>
           </a>
-          <a href="#student/home" title="Switch to Student App View" class="text-[#64748B] hover:text-[#4A90E2] p-1.5 rounded-md hover:bg-[#E6F4FF] transition-colors shrink-0">
+          <a href="#student/home" title="Switch to Student App View" class="btn-3d text-slate-500 hover:text-[#2563EB] p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 transition-colors shrink-0">
             <span class="material-symbols-outlined text-[18px]">smartphone</span>
           </a>
         </div>
-        <button id="adminLogoutBtn" type="button" class="w-full py-1.5 px-2 rounded-md text-[11px] font-code text-rose-300/80 hover:text-[#172B4D] hover:bg-error/20 flex items-center justify-center gap-1 transition-colors">
+        <button id="adminLogoutBtn" type="button" class="btn-3d w-full py-2 px-2 rounded-lg text-[11px] font-code text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 flex items-center justify-center gap-1.5 transition-colors">
           <span class="material-symbols-outlined text-[14px]">logout</span> Sign Out Admin
         </button>
       </div>
@@ -253,7 +293,7 @@ export function renderAdminSidebar(activeRoute) {
 
 export function renderMobileMenuButton() {
   return `
-    <button id="openMobileSidebarBtn" type="button" aria-label="Open navigation menu" class="lg:hidden w-9 h-9 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] shrink-0">
+    <button id="openMobileSidebarBtn" type="button" aria-label="Open navigation menu" class="btn-3d lg:hidden w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-[#0F172A] shadow-xs shrink-0">
       <span class="material-symbols-outlined text-[20px]">menu</span>
     </button>
   `;

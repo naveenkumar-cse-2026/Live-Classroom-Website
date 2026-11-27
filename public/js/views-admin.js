@@ -148,18 +148,18 @@ function openEmergencyBroadcastModal() {
           </div>
           <div>
             <h3 class="font-headline text-headline-sm text-[#172B4D]">Broadcast Emergency Campus Alert</h3>
-            <p class="text-xs text-rose-200/75">Triggers an instant top-of-screen alert banner across all connected screens</p>
+            <p class="text-xs text-rose-700/75">Triggers an instant top-of-screen alert banner across all connected screens</p>
           </div>
         </div>
-        <button type="button" data-close-modal class="text-rose-200 hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
+        <button type="button" data-close-modal class="text-rose-700 hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
       </div>
       <form id="emergencyForm" class="p-6 space-y-4">
         <div>
-          <label class="block text-xs font-label text-rose-200 mb-1">Alert Headline</label>
+          <label class="block text-xs font-label text-rose-700 mb-1">Alert Headline</label>
           <input id="alertTitle" type="text" required placeholder="Enter urgent alert headline" class="w-full px-3.5 py-2.5 rounded-md bg-white/85 border border-error/40 text-[#172B4D] text-sm outline-none focus:border-error" />
         </div>
         <div>
-          <label class="block text-xs font-label text-rose-200 mb-1">Alert Message</label>
+          <label class="block text-xs font-label text-rose-700 mb-1">Alert Message</label>
           <textarea id="alertMsg" rows="3" required placeholder="Enter instructions for students and faculty..." class="w-full px-3.5 py-2.5 rounded-md bg-white/85 border border-error/40 text-[#172B4D] text-sm outline-none focus:border-error"></textarea>
         </div>
         <div class="pt-4 border-t border-error/25 flex justify-end gap-3">
@@ -432,7 +432,7 @@ function openChangeAdminPasswordModal() {
         <button type="button" data-close-modal class="text-[#64748B] hover:text-[#172B4D]"><span class="material-symbols-outlined">close</span></button>
       </div>
       <form id="changeAdminPwdForm" class="p-6 space-y-4">
-        <div id="adminPwdErr" class="hidden p-3 rounded-lg bg-error/15 border border-error/45 text-rose-200 text-xs"></div>
+        <div id="adminPwdErr" class="hidden p-3 rounded-lg bg-error/15 border border-error/45 text-rose-700 text-xs"></div>
         <div>
           <label class="block text-xs font-label text-[#64748B] mb-1">Current Password</label>
           <div class="relative flex items-center">
@@ -514,53 +514,53 @@ export function renderAdminDashboard(container) {
   const mustChangePwd = !!store.getAdminSession()?.mustChangePassword;
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-admin min-h-screen flex">
       ${renderAdminSidebar('admin/dashboard')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="admin-header sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="font-headline text-headline-sm text-[#172B4D]">Central Operations Console</h1>
-                <span class="px-2.5 py-0.5 rounded-full bg-success/20 border border-success/40 text-success font-code text-xs">
+                <h1 class="font-headline text-xl font-bold text-[#0F172A] tracking-tight">Central Operations Console</h1>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-code text-[11px] font-medium">
                   System Online
                 </span>
               </div>
-              <p class="text-body-sm text-[#64748B]/70">${esc(settings.collegeName || 'Configure your institution name in College Settings')}</p>
+              <p class="text-xs text-slate-500 mt-0.5">${esc(settings.collegeName || 'Configure your institution name in College Settings')}</p>
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2.5">
             <div class="relative w-56 hidden md:block">
-              <span class="material-symbols-outlined absolute left-3 top-2.5 text-[#64748B]/60 text-[18px]">search</span>
-              <input id="adminQuickSearch" type="text" placeholder="Search students..." class="w-full pl-9 pr-4 py-2 rounded-md bg-[#E6F4FF] border border-[#4A90E2]/20 text-[#172B4D] placeholder-[#64748B]/40 text-xs focus:border-[#4A90E2] outline-none" />
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+              <input id="adminQuickSearch" type="text" placeholder="Search students..." class="glass-input w-full pl-9 pr-4 py-2 text-xs placeholder-slate-400" />
             </div>
 
-            <button id="dashAddStudentBtn" type="button" class="px-4 py-2 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label flex items-center gap-1.5 shadow-[0_0_15px_rgba(74,144,226,0.35)] hover:shadow-[0_0_22px_rgba(74,144,226,0.5)] transition-all">
+            <button id="dashAddStudentBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold flex items-center gap-1.5 shadow-sm">
               <span class="material-symbols-outlined text-[16px]">person_add</span>
               <span>Add Student</span>
             </button>
 
-            <button id="adminActivityBtn" type="button" title="Activity Log" class="w-9 h-9 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 flex items-center justify-center text-[#64748B] hover:text-[#172B4D] relative">
+            <button id="adminActivityBtn" type="button" title="Activity Log" class="btn-3d w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-[#0F172A] relative shadow-xs">
               <span class="material-symbols-outlined text-[20px]">notifications</span>
-              ${activityLog.length > 0 ? `<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-neon-purple"></span>` : ''}
+              ${activityLog.length > 0 ? `<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#2563EB]"></span>` : ''}
             </button>
           </div>
         </header>
 
-        <main class="p-4 sm:p-8 space-y-8 flex-1 animate-enter">
+        <main class="p-4 sm:p-8 space-y-7 flex-1 animate-enter">
           ${mustChangePwd ? `
-            <div class="p-4 rounded-xl bg-amber-500/15 border border-amber-500/45 flex flex-wrap items-center justify-between gap-3">
+            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3">
               <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-amber-400 text-[24px]">security</span>
+                <span class="material-symbols-outlined text-amber-600 text-[24px]">security</span>
                 <div class="text-xs">
-                  <div class="font-label font-semibold text-[#172B4D]">Security Recommendation: Change Initial Administrator Password</div>
-                  <div class="text-amber-700/80">You are currently signed in with the initial password. Update it now to secure your Admin Console.</div>
+                  <div class="font-label font-semibold text-[#0F172A]">Security Recommendation: Change Initial Administrator Password</div>
+                  <div class="text-amber-800/80">You are currently signed in with the initial password. Update it now to secure your Admin Console.</div>
                 </div>
               </div>
-              <button id="dashChangePwdBtn" type="button" class="px-4 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-[#172B4D] text-xs font-label font-bold transition-colors">
+              <button id="dashChangePwdBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-label font-semibold">
                 Change Password Now
               </button>
             </div>
@@ -568,71 +568,71 @@ export function renderAdminDashboard(container) {
 
           <!-- KPI Row (100% Real Dynamic Counts) -->
           <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <a href="#admin/students" class="p-5 rounded-lg bg-white/80 border border-glass-border hover:border-[#4A90E2]/30 shadow-[0_4px_24px_rgba(74,144,226,0.08)] transition-all relative overflow-hidden group">
+            <a href="#admin/students" class="admin-card card-3d p-5 relative overflow-hidden group block">
               <div class="flex items-start justify-between">
                 <div>
-                  <span class="text-body-sm text-[#64748B]/70 font-medium text-xs">Total Students</span>
-                  <div class="font-code text-display-lg-mobile text-[#172B4D] font-bold mt-1 tracking-tight">${students.length.toLocaleString()}</div>
+                  <span class="text-slate-500 font-medium text-xs">Total Students</span>
+                  <div class="font-code text-3xl text-[#0F172A] font-bold mt-1.5 tracking-tight">${students.length.toLocaleString()}</div>
                 </div>
-                <div class="w-11 h-11 rounded-lg bg-neon-purple/20 border border-[#4A90E2]/25 text-neon-purple flex items-center justify-center shadow-[0_0_12px_rgba(74,144,226,0.15)]">
-                  <span class="material-symbols-outlined text-[24px]">school</span>
+                <div class="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#2563EB] flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[22px]">school</span>
                 </div>
               </div>
-              <div class="mt-4 flex items-center gap-2 text-xs font-code">
-                <span class="${activeStudents.length > 0 ? 'text-success' : 'text-[#64748B]/60'} flex items-center gap-0.5">
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-code">
+                <span class="${activeStudents.length > 0 ? 'text-emerald-600' : 'text-slate-400'} flex items-center gap-1 font-medium">
                   <span class="material-symbols-outlined text-sm">verified_user</span> ${activeStudents.length} Active
                 </span>
-                <span class="text-[#64748B]/50">logged in</span>
+                <span class="text-slate-400">logged in</span>
               </div>
             </a>
 
-            <a href="#admin/teachers" class="p-5 rounded-lg bg-white/80 border border-glass-border hover:border-[#4A90E2]/30 shadow-[0_4px_24px_rgba(74,144,226,0.08)] transition-all relative overflow-hidden group">
+            <a href="#admin/teachers" class="admin-card card-3d p-5 relative overflow-hidden group block">
               <div class="flex items-start justify-between">
                 <div>
-                  <span class="text-body-sm text-[#64748B]/70 font-medium text-xs">Faculty &amp; Professors</span>
-                  <div class="font-code text-display-lg-mobile text-[#172B4D] font-bold mt-1 tracking-tight">${teachers.length.toLocaleString()}</div>
+                  <span class="text-slate-500 font-medium text-xs">Faculty &amp; Professors</span>
+                  <div class="font-code text-3xl text-[#0F172A] font-bold mt-1.5 tracking-tight">${teachers.length.toLocaleString()}</div>
                 </div>
-                <div class="w-11 h-11 rounded-lg bg-electric-violet/20 border border-electric-violet/40 text-electric-violet flex items-center justify-center shadow-[0_0_12px_rgba(74,144,226,0.15)]">
-                  <span class="material-symbols-outlined text-[24px]">co_present</span>
+                <div class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 text-[#0F172A] flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[22px]">co_present</span>
                 </div>
               </div>
-              <div class="mt-4 flex items-center gap-2 text-xs font-code">
-                <span class="${liveTeachers.length > 0 ? 'text-success' : 'text-[#64748B]/60'} flex items-center gap-0.5">
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-code">
+                <span class="${liveTeachers.length > 0 ? 'text-emerald-600' : 'text-slate-400'} flex items-center gap-1 font-medium">
                   <span class="material-symbols-outlined text-sm">check_circle</span> ${liveTeachers.length} Live
                 </span>
-                <span class="text-[#64748B]/50">${teachers.length === 0 ? 'none registered' : 'registered faculty'}</span>
+                <span class="text-slate-400">${teachers.length === 0 ? 'none registered' : 'registered faculty'}</span>
               </div>
             </a>
 
-            <a href="#admin/resources" class="p-5 rounded-lg bg-white/80 border border-glass-border hover:border-[#4A90E2]/30 shadow-[0_4px_24px_rgba(74,144,226,0.08)] transition-all relative overflow-hidden group">
+            <a href="#admin/resources" class="admin-card card-3d p-5 relative overflow-hidden group block">
               <div class="flex items-start justify-between">
                 <div>
-                  <span class="text-body-sm text-[#64748B]/70 font-medium text-xs">Materials &amp; Notices</span>
-                  <div class="font-code text-display-lg-mobile text-[#172B4D] font-bold mt-1 tracking-tight">${(materials.length + notices.length).toLocaleString()}</div>
+                  <span class="text-slate-500 font-medium text-xs">Materials &amp; Notices</span>
+                  <div class="font-code text-3xl text-[#0F172A] font-bold mt-1.5 tracking-tight">${(materials.length + notices.length).toLocaleString()}</div>
                 </div>
-                <div class="w-11 h-11 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[24px]">campaign</span>
+                <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[22px]">campaign</span>
                 </div>
               </div>
-              <div class="mt-4 flex items-center gap-2 text-xs font-code">
-                <span class="text-neon-purple font-semibold">${materials.length} Materials</span>
-                <span class="text-[#64748B]/50">• ${notices.length} Notices</span>
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-code">
+                <span class="text-[#2563EB] font-semibold">${materials.length} Materials</span>
+                <span class="text-slate-400">• ${notices.length} Notices</span>
               </div>
             </a>
 
-            <a href="#admin/timetable" class="p-5 rounded-lg bg-white/80 border border-glass-border hover:border-[#4A90E2]/30 shadow-[0_4px_24px_rgba(74,144,226,0.08)] transition-all relative overflow-hidden group">
+            <a href="#admin/timetable" class="admin-card card-3d p-5 relative overflow-hidden group block">
               <div class="flex items-start justify-between">
                 <div>
-                  <span class="text-body-sm text-[#64748B]/70 font-medium text-xs">Timetable &amp; Events</span>
-                  <div class="font-code text-display-lg-mobile text-[#172B4D] font-bold mt-1 tracking-tight">${(timetable.length + events.length).toLocaleString()}</div>
+                  <span class="text-slate-500 font-medium text-xs">Timetable &amp; Events</span>
+                  <div class="font-code text-3xl text-[#0F172A] font-bold mt-1.5 tracking-tight">${(timetable.length + events.length).toLocaleString()}</div>
                 </div>
-                <div class="w-11 h-11 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[24px]">event_upcoming</span>
+                <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[22px]">event_upcoming</span>
                 </div>
               </div>
-              <div class="mt-4 flex items-center gap-2 text-xs font-code">
-                <span class="${timetableImage ? 'text-emerald-400' : 'text-[#64748B]/60'}">${timetableImage ? 'Timetable Image Ready' : `${events.length} Events`}</span>
-                <span class="text-[#64748B]/50">• ${timetable.length} Slots</span>
+              <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-code">
+                <span class="${timetableImage ? 'text-emerald-600 font-medium' : 'text-slate-400'}">${timetableImage ? 'Timetable Image Ready' : `${events.length} Events`}</span>
+                <span class="text-slate-400">• ${timetable.length} Slots</span>
               </div>
             </a>
           </section>
@@ -640,28 +640,28 @@ export function renderAdminDashboard(container) {
           <!-- Operational Row -->
           <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left 2 Cols: Live AI Classroom Hub -->
-            <div class="lg:col-span-2 p-6 rounded-xl bg-white/80 border border-[#4A90E2]/15 shadow-[0_4px_30px_rgba(74,144,226,0.08)] space-y-5">
+            <div class="lg:col-span-2 admin-card p-6 space-y-5">
               <div class="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h2 class="font-headline text-headline-sm text-[#172B4D]">Live AI Classroom Hub</h2>
-                  <p class="text-body-sm text-[#64748B]/70 text-xs mt-0.5">Real-time status of registered faculty classrooms</p>
+                  <h2 class="font-headline text-lg font-bold text-[#0F172A]">Live AI Classroom Hub</h2>
+                  <p class="text-slate-500 text-xs mt-0.5">Real-time status of registered faculty classrooms</p>
                 </div>
-                <span class="px-3 py-1 rounded-full ${liveTeachers.length > 0 ? 'bg-neon-purple/20 border-[#4A90E2]/25 text-neon-purple' : 'bg-[#F0F8FF] border-glass-border text-[#64748B]/60'} border font-code text-xs flex items-center gap-1.5">
-                  ${liveTeachers.length > 0 ? '<span class="w-2 h-2 rounded-full bg-neon-purple animate-ping"></span>' : '<span class="w-2 h-2 rounded-full bg-cyber-lavender/40"></span>'}
+                <span class="px-3 py-1 rounded-full ${liveTeachers.length > 0 ? 'bg-blue-50 border-blue-200 text-[#2563EB]' : 'bg-slate-100 border-slate-200 text-slate-500'} border font-code text-xs flex items-center gap-1.5">
+                  ${liveTeachers.length > 0 ? '<span class="w-2 h-2 rounded-full bg-[#2563EB] animate-ping"></span>' : '<span class="w-2 h-2 rounded-full bg-slate-400"></span>'}
                   ${liveTeachers.length} ${liveTeachers.length === 1 ? 'Hall' : 'Halls'} Live
                 </span>
               </div>
 
               ${teachers.length === 0 ? `
-                <div class="p-6 rounded-xl bg-[#E6F4FF]/50/80 border border-dashed border-glass-border text-center space-y-3">
-                  <div class="w-12 h-12 mx-auto rounded-xl bg-neon-purple/15 border border-[#4A90E2]/20 text-neon-purple flex items-center justify-center">
+                <div class="p-8 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-3">
+                  <div class="w-12 h-12 mx-auto rounded-xl bg-blue-50 border border-blue-100 text-[#2563EB] flex items-center justify-center">
                     <span class="material-symbols-outlined text-[24px]">co_present</span>
                   </div>
                   <div>
-                    <h3 class="font-headline text-title-md text-[#172B4D]">No Faculty Registered Yet</h3>
-                    <p class="text-xs text-[#64748B]/65 mt-0.5">Add professors in Manage Teachers to manage classroom sessions here.</p>
+                    <h3 class="font-headline text-base font-semibold text-[#0F172A]">No Faculty Registered Yet</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Add professors in Manage Teachers to manage classroom sessions here.</p>
                   </div>
-                  <a href="#admin/teachers" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-neon-purple/20 hover:bg-neon-purple/35 border border-[#4A90E2]/25 text-xs font-label text-[#172B4D] transition-colors">
+                  <a href="#admin/teachers" class="btn-3d inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-[#1E293B] text-xs font-label font-semibold text-white transition-colors">
                     <span class="material-symbols-outlined text-[16px]">person_add</span>
                     <span>Go to Manage Teachers</span>
                   </a>
@@ -690,7 +690,7 @@ export function renderAdminDashboard(container) {
               `}
 
               <div class="pt-2 flex flex-wrap items-center gap-3">
-                <button id="emergencyAlertBtn" type="button" class="px-3.5 py-2 rounded-md bg-error/15 hover:bg-error/25 border border-error/40 text-xs font-label text-rose-200 flex items-center gap-1.5 transition-colors">
+                <button id="emergencyAlertBtn" type="button" class="px-3.5 py-2 rounded-md bg-error/15 hover:bg-error/25 border border-error/40 text-xs font-label text-rose-700 flex items-center gap-1.5 transition-colors">
                   <span class="material-symbols-outlined text-[16px] text-error">campaign</span>
                   Broadcast Emergency Alert
                 </button>
@@ -893,59 +893,59 @@ export function renderAdminStudents(container) {
   });
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-admin min-h-screen flex">
       ${renderAdminSidebar('admin/students')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="admin-header sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="font-headline text-headline-sm text-[#172B4D]">Student Directory &amp; Enrollment</h1>
-                <span class="font-code text-xs px-2.5 py-0.5 rounded-full bg-neon-purple/20 text-[#64748B] border border-[#4A90E2]/20">
+                <h1 class="font-headline text-xl font-bold text-[#0F172A] tracking-tight">Student Directory &amp; Enrollment</h1>
+                <span class="font-code text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                   ${students.length} Total
                 </span>
-                <span class="font-code text-xs px-2.5 py-0.5 rounded-full ${activeStudents.length > 0 ? 'bg-success/20 text-success border-success/30' : 'bg-[#F0F8FF] text-[#64748B]/60 border-glass-border'} border">
+                <span class="font-code text-xs px-2.5 py-0.5 rounded-full ${activeStudents.length > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'} border">
                   ${activeStudents.length} Active (Logged In)
                 </span>
               </div>
-              <p class="text-body-sm text-[#64748B]/70">Add, edit, deactivate, or remove students. Active count tracks students who have signed in.</p>
+              <p class="text-xs text-slate-500 mt-0.5">Add, edit, deactivate, or remove students. Active count tracks students who have signed in.</p>
             </div>
           </div>
 
-          <button id="openEnrollModalBtn" type="button" class="px-4 py-2.5 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label flex items-center gap-2 shadow-[0_0_20px_rgba(74,144,226,0.2)] hover:shadow-[0_0_28px_rgba(74,144,226,0.6)] transition-all border border-[#4A90E2]/35 active:scale-95">
+          <button id="openEnrollModalBtn" type="button" class="btn-3d px-4 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold flex items-center gap-2 shadow-sm">
             <span class="material-symbols-outlined text-[18px]">person_add</span>
             <span>Add Student</span>
           </button>
         </header>
 
         <main class="p-4 sm:p-8 space-y-6 flex-1 animate-enter">
-          <div class="p-4 rounded-xl bg-white/80 border border-[#4A90E2]/15 flex flex-wrap items-center justify-between gap-4">
+          <div class="admin-card p-4 flex flex-wrap items-center justify-between gap-4">
             <div class="relative w-full sm:w-80">
-              <span class="material-symbols-outlined absolute left-3 top-2.5 text-[#64748B]/60 text-[18px]">search</span>
-              <input id="stuSearchInp" type="text" value="${esc(studentSearch)}" placeholder="Search by name, email, register number..." class="w-full pl-9 pr-4 py-2 rounded-md bg-white/85 border border-glass-border text-[#172B4D] placeholder-[#64748B]/40 text-xs focus:border-[#4A90E2] outline-none font-body" />
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+              <input id="stuSearchInp" type="text" value="${esc(studentSearch)}" placeholder="Search by name, email, register number..." class="glass-input w-full pl-9 pr-4 py-2 text-xs font-body placeholder-slate-400" />
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-              <select id="stuDeptSel" class="px-3 py-2 rounded-md bg-white/85 border border-glass-border text-[#64748B] text-xs focus:border-[#4A90E2] outline-none">
+              <select id="stuDeptSel" class="glass-input px-3 py-2 text-slate-700 text-xs">
                 <option value="ALL">All Departments</option>
                 ${deptOpts.map((d) => `<option value="${esc(d)}" ${studentDeptFilter === d ? 'selected' : ''}>${esc(d)}</option>`).join('')}
               </select>
 
-              <select id="stuYearSel" class="px-3 py-2 rounded-md bg-white/85 border border-glass-border text-[#64748B] text-xs focus:border-[#4A90E2] outline-none">
+              <select id="stuYearSel" class="glass-input px-3 py-2 text-slate-700 text-xs">
                 <option value="ALL">All Years</option>
                 ${['Year 1', 'Year 2', 'Year 3', 'Year 4'].map((y) => `<option value="${y}" ${studentYearFilter === y ? 'selected' : ''}>${y}</option>`).join('')}
               </select>
 
-              <select id="stuStatusSel" class="px-3 py-2 rounded-md bg-white/85 border border-glass-border text-[#64748B] text-xs focus:border-[#4A90E2] outline-none">
+              <select id="stuStatusSel" class="glass-input px-3 py-2 text-slate-700 text-xs">
                 <option value="ALL">All Login Statuses</option>
                 <option value="ACTIVE" ${studentStatusFilter === 'ACTIVE' ? 'selected' : ''}>Active (Logged In)</option>
                 <option value="NEVER_LOGGED_IN" ${studentStatusFilter === 'NEVER_LOGGED_IN' ? 'selected' : ''}>Not Logged In</option>
                 <option value="DEACTIVATED" ${studentStatusFilter === 'DEACTIVATED' ? 'selected' : ''}>Deactivated</option>
               </select>
 
-              <button id="exportCsvBtn" type="button" ${students.length === 0 ? 'disabled' : ''} class="px-3 py-2 rounded-md bg-[#F0F8FF] hover:bg-[#E6F4FF] text-[#172B4D] text-xs border border-glass-border flex items-center gap-1 transition-colors disabled:opacity-40">
+              <button id="exportCsvBtn" type="button" ${students.length === 0 ? 'disabled' : ''} class="btn-3d px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-[#0F172A] text-xs border border-slate-200 flex items-center gap-1.5 disabled:opacity-40">
                 <span class="material-symbols-outlined text-[16px]">file_download</span>
                 <span>Export CSV</span>
               </button>
@@ -953,32 +953,32 @@ export function renderAdminStudents(container) {
           </div>
 
           ${students.length === 0 ? `
-            <div class="p-12 rounded-2xl bg-white/75 border border-dashed border-[#4A90E2]/20 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div class="w-16 h-16 mx-auto rounded-2xl bg-[#4A90E2]/10 border border-[#4A90E2]/30 text-[#4A90E2] flex items-center justify-center">
-                <span class="material-symbols-outlined text-[32px]">group</span>
+            <div class="admin-card p-12 border-dashed text-center space-y-4 max-w-xl mx-auto my-8">
+              <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-50 border border-blue-100 text-[#2563EB] flex items-center justify-center">
+                <span class="material-symbols-outlined text-[28px]">group</span>
               </div>
               <div class="space-y-1.5">
-                <h2 class="font-headline text-headline-sm text-[#172B4D]">No Students Added Yet</h2>
-                <p class="text-xs text-[#64748B]/70 max-w-md mx-auto leading-relaxed">
+                <h2 class="font-headline text-lg font-bold text-[#0F172A]">No Students Added Yet</h2>
+                <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                   Add students one by one using the Add Student button. Students are counted as Active only after they log in successfully.
                 </p>
               </div>
-              <button id="emptyAddStudentBtn" type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label shadow-[0_0_20px_rgba(74,144,226,0.2)] border border-[#4A90E2]/35">
+              <button id="emptyAddStudentBtn" type="button" class="btn-3d inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#2563EB] text-white text-xs font-label font-semibold shadow-sm">
                 <span class="material-symbols-outlined text-[18px]">person_add</span>
                 <span>Add First Student</span>
               </button>
             </div>
           ` : filtered.length === 0 ? `
-            <div class="p-10 rounded-xl bg-white/85/75 border border-glass-border text-center space-y-3">
-              <p class="text-sm text-[#172B4D] font-label">No students match the selected filters.</p>
-              <button id="clearStuFiltersBtn" type="button" class="px-4 py-1.5 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 text-xs text-[#64748B] hover:text-[#172B4D]">Clear Filters</button>
+            <div class="admin-card p-10 text-center space-y-3">
+              <p class="text-sm text-[#0F172A] font-label">No students match the selected filters.</p>
+              <button id="clearStuFiltersBtn" type="button" class="btn-3d px-4 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs text-slate-700 hover:bg-slate-200">Clear Filters</button>
             </div>
           ` : `
-            <div class="rounded-xl bg-white/80 border border-[#4A90E2]/15 shadow-[0_4px_30px_rgba(74,144,226,0.08)] overflow-hidden">
+            <div class="admin-card overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                   <thead>
-                    <tr class="border-b border-glass-border bg-[#E6F4FF]/50 text-[#64748B]/70 font-code text-[11px] uppercase tracking-wider">
+                    <tr class="border-b border-slate-200 bg-slate-50 text-slate-500 font-code text-[11px] uppercase tracking-wider">
                       <th class="p-4 pl-6">Student</th>
                       <th class="p-4">Register Number</th>
                       <th class="p-4">Department / Program</th>
@@ -987,71 +987,69 @@ export function renderAdminStudents(container) {
                       <th class="p-4 pr-6 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-glass-border/50 text-sm">
+                  <tbody class="divide-y divide-slate-100 text-sm">
                     ${filtered.map((stu) => {
-                      const isDeact = stu.status === 'Deactivated';
-                      const isActive = stu.hasLoggedIn === true && !isDeact;
-                      return `
-                        <tr class="hover:bg-white/[0.02] transition-colors group ${isDeact ? 'opacity-60' : ''}">
+    const isDeact = stu.status === 'Deactivated';
+    const isActive = stu.hasLoggedIn === true && !isDeact;
+    return `
+                        <tr class="hover:bg-slate-50/80 transition-colors group ${isDeact ? 'opacity-60' : ''}">
                           <td class="p-4 pl-6">
                             <div class="flex items-center gap-3">
-                              <div class="w-9 h-9 rounded-full ${isDeact ? 'bg-[#E6F4FF]' : 'bg-gradient-to-tr from-neon-purple to-deep-violet'} p-[1px] shrink-0">
-                                <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-xs font-bold text-[#64748B] overflow-hidden">
-                                  ${stu.avatarDataUrl ? `<img src="${esc(stu.avatarDataUrl)}" class="w-full h-full object-cover" />` : esc(stu.initials)}
-                                </div>
+                              <div class="w-9 h-9 rounded-full ${isDeact ? 'bg-slate-200' : 'bg-[#0F172A]'} shrink-0 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                                ${stu.avatarDataUrl ? `<img src="${esc(stu.avatarDataUrl)}" class="w-full h-full object-cover" />` : esc(stu.initials)}
                               </div>
                               <div>
-                                <div class="font-label font-semibold text-[#172B4D]">${esc(stu.name)}</div>
-                                <div class="text-xs text-[#64748B]/60">${esc(stu.email)}${stu.phone ? ` • <span class="font-code text-[#64748B]/75">${esc(stu.phone)}</span>` : ''}</div>
+                                <div class="font-label font-semibold text-[#0F172A]">${esc(stu.name)}</div>
+                                <div class="text-xs text-slate-500">${esc(stu.email)}${stu.phone ? ` • <span class="font-code text-slate-600">${esc(stu.phone)}</span>` : ''}</div>
                               </div>
                             </div>
                           </td>
-                          <td class="p-4 font-code text-xs text-neon-purple font-medium">${esc(stu.regNo)}</td>
+                          <td class="p-4 font-code text-xs text-[#2563EB] font-semibold">${esc(stu.regNo)}</td>
                           <td class="p-4 text-xs">
-                            <div class="text-dark-on-surface">${esc(stu.department || '—')}</div>
-                            ${stu.program ? `<div class="text-[11px] text-[#64748B]/55">${esc(stu.program)}</div>` : ''}
+                            <div class="text-[#0F172A] font-medium">${esc(stu.department || '—')}</div>
+                            ${stu.program ? `<div class="text-[11px] text-slate-500">${esc(stu.program)}</div>` : ''}
                           </td>
-                          <td class="p-4 font-code text-xs text-[#64748B]">${esc(stu.year)} • ${esc(stu.section)}</td>
+                          <td class="p-4 font-code text-xs text-slate-600">${esc(stu.year)} • ${esc(stu.section)}</td>
                           <td class="p-4">
                             ${isDeact ? `
-                              <span class="px-2.5 py-0.5 rounded-full bg-[#E6F4FF] text-[#172B4D]/50 text-[11px] font-code border border-white/20 inline-flex items-center gap-1">
+                              <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[11px] font-code border border-slate-200 inline-flex items-center gap-1">
                                 Deactivated
                               </span>
                             ` : isActive ? `
-                              <span class="px-2.5 py-0.5 rounded-full bg-success/20 text-success text-[11px] font-code border border-success/40 inline-flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-code border border-emerald-200 inline-flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                 Active (Logged In)
                               </span>
                             ` : `
-                              <span class="px-2.5 py-0.5 rounded-full bg-[#F0F8FF] text-[#64748B]/75 text-[11px] font-code border border-glass-border inline-flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-cyber-lavender/50"></span>
+                              <span class="px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-500 text-[11px] font-code border border-slate-200 inline-flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                 Not Logged In
                               </span>
                             `}
                           </td>
                           <td class="p-4 pr-6 text-right">
-                            <div class="flex items-center justify-end gap-1.5">
-                              <button type="button" data-edit-stu="${esc(stu.id)}" class="p-1.5 rounded hover:bg-[#E6F4FF] text-[#64748B] hover:text-[#172B4D]" title="Edit Student">
+                            <div class="flex items-center justify-end gap-1">
+                              <button type="button" data-edit-stu="${esc(stu.id)}" class="btn-3d p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-[#2563EB]" title="Edit Student">
                                 <span class="material-symbols-outlined text-[18px]">edit</span>
                               </button>
-                              <button type="button" data-toggle-stu="${esc(stu.id)}" class="p-1.5 rounded hover:bg-amber-500/20 text-[#64748B] hover:text-amber-400" title="${isDeact ? 'Reactivate Account' : 'Deactivate Account'}">
+                              <button type="button" data-toggle-stu="${esc(stu.id)}" class="btn-3d p-1.5 rounded-lg hover:bg-amber-50 text-slate-500 hover:text-amber-600" title="${isDeact ? 'Reactivate Account' : 'Deactivate Account'}">
                                 <span class="material-symbols-outlined text-[18px]">${isDeact ? 'refresh' : 'block'}</span>
                               </button>
-                              <button type="button" data-del-stu="${esc(stu.id)}" class="p-1.5 rounded hover:bg-error/20 text-[#64748B] hover:text-error" title="Delete Student">
+                              <button type="button" data-del-stu="${esc(stu.id)}" class="btn-3d p-1.5 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600" title="Delete Student">
                                 <span class="material-symbols-outlined text-[18px]">delete</span>
                               </button>
                             </div>
                           </td>
                         </tr>
                       `;
-                    }).join('')}
+  }).join('')}
                   </tbody>
                 </table>
               </div>
 
-              <div class="p-4 border-t border-glass-border bg-[#E6F4FF]/50 flex items-center justify-between text-xs font-code text-[#64748B]/60">
+              <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs font-code text-slate-500">
                 <span>Showing ${filtered.length} of ${students.length} students (${activeStudents.length} active)</span>
-                <span class="text-neon-purple">Synced live</span>
+                <span class="text-[#2563EB] font-medium">Synced live</span>
               </div>
             </div>
           `}
@@ -1157,46 +1155,47 @@ export function renderAdminTeachers(container) {
   });
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-teacher min-h-screen flex">
       ${renderAdminSidebar('admin/teachers')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <!-- THEME 8: CORPORATE STYLE HEADER -->
+        <header class="corp-navy-bar sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="font-headline text-headline-sm text-[#172B4D]">Faculty &amp; Teacher Management</h1>
-                <span class="font-code text-xs px-2.5 py-0.5 rounded-full bg-neon-purple/20 text-[#64748B] border border-[#4A90E2]/20">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <h1 class="font-headline text-xl font-bold text-white tracking-tight">Faculty &amp; Teacher Management</h1>
+                <span class="font-code text-[11px] px-2.5 py-0.5 rounded bg-white/10 text-slate-200 border border-white/15">
                   ${teachers.length} Registered
                 </span>
-                <span class="font-code text-xs px-2.5 py-0.5 rounded-full ${liveCount > 0 ? 'bg-success/20 text-success border-success/30' : 'bg-[#F0F8FF] text-[#64748B]/60 border-glass-border'} border">
+                <span class="font-code text-[11px] px-2.5 py-0.5 rounded ${liveCount > 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-white/10 text-slate-300 border-white/15'} border">
                   ${liveCount} Live Now
                 </span>
               </div>
-              <p class="text-body-sm text-[#64748B]/70">Register professors, assign departments and courses, and manage classroom sessions</p>
+              <p class="text-xs text-slate-300 mt-0.5">Corporate Faculty Directory — assign departments, courses, and manage classroom sessions</p>
             </div>
           </div>
 
-          <button id="openAddTeacherBtn" type="button" class="px-4 py-2.5 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label flex items-center gap-2 shadow-[0_0_20px_rgba(74,144,226,0.2)] border border-[#4A90E2]/35 active:scale-95 transition-transform">
+          <button id="openAddTeacherBtn" type="button" class="btn-3d px-4 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold flex items-center gap-2 shadow-sm">
             <span class="material-symbols-outlined text-[18px]">person_add</span>
             <span>Add New Professor</span>
           </button>
         </header>
 
         <main class="p-4 sm:p-8 space-y-6 flex-1 animate-enter">
-          <div class="p-4 rounded-xl bg-white/80 border border-[#4A90E2]/15 flex flex-wrap items-center justify-between gap-4">
+          <div class="corp-card p-4 flex flex-wrap items-center justify-between gap-4">
             <div class="relative w-full sm:w-80">
-              <span class="material-symbols-outlined absolute left-3 top-2.5 text-[#64748B]/60 text-[18px]">search</span>
-              <input id="teaSearchInp" type="text" value="${esc(teacherSearch)}" placeholder="Search professor name, course, staff ID..." class="w-full pl-9 pr-4 py-2 rounded-md bg-white/85 border border-glass-border text-[#172B4D] placeholder-[#64748B]/40 text-xs focus:border-[#4A90E2] outline-none font-body" />
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+              <input id="teaSearchInp" type="text" value="${esc(teacherSearch)}" placeholder="Search professor name, course, staff ID..." class="glass-input w-full pl-9 pr-4 py-2 text-xs font-body placeholder-slate-400" />
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <select id="teaDeptSel" class="px-3 py-2 rounded-md bg-white/85 border border-glass-border text-[#64748B] text-xs focus:border-[#4A90E2] outline-none">
+              <select id="teaDeptSel" class="glass-input px-3 py-2 text-slate-700 text-xs">
                 <option value="ALL">All Departments</option>
                 ${deptOpts.map((dept) => `<option value="${esc(dept)}" ${teacherDeptFilter === dept ? 'selected' : ''}>${esc(dept)}</option>`).join('')}
               </select>
-              <select id="teaStatusSel" class="px-3 py-2 rounded-md bg-white/85 border border-glass-border text-[#64748B] text-xs focus:border-[#4A90E2] outline-none">
+              <select id="teaStatusSel" class="glass-input px-3 py-2 text-slate-700 text-xs">
                 <option value="ALL">All Statuses</option>
                 <option value="Streaming Live" ${teacherStatusFilter === 'Streaming Live' ? 'selected' : ''}>Streaming Live</option>
                 <option value="Office Hours" ${teacherStatusFilter === 'Office Hours' ? 'selected' : ''}>Office Hours</option>
@@ -1206,90 +1205,154 @@ export function renderAdminTeachers(container) {
           </div>
 
           ${teachers.length === 0 ? `
-            <div class="p-12 rounded-2xl bg-white/75 border border-dashed border-[#4A90E2]/20 text-center space-y-4 max-w-xl mx-auto my-8">
-              <div class="w-16 h-16 mx-auto rounded-2xl bg-[#4A90E2]/10 border border-[#4A90E2]/30 text-[#4A90E2] flex items-center justify-center">
-                <span class="material-symbols-outlined text-[32px]">co_present</span>
+            <div class="corp-card p-12 border-dashed text-center space-y-4 max-w-xl mx-auto my-8">
+              <div class="w-14 h-14 mx-auto rounded-xl bg-slate-100 border border-slate-200 text-[#0F172A] flex items-center justify-center">
+                <span class="material-symbols-outlined text-[28px]">co_present</span>
               </div>
               <div class="space-y-1.5">
-                <h2 class="font-headline text-headline-sm text-[#172B4D]">No Teachers Registered Yet</h2>
-                <p class="text-xs text-[#64748B]/70 max-w-md mx-auto leading-relaxed">
+                <h2 class="font-headline text-lg font-bold text-[#0F172A]">No Teachers Registered Yet</h2>
+                <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                   Add professors manually using Add New Professor to assign courses, departments, and classrooms.
                 </p>
               </div>
-              <button id="emptyAddTeacherBtn" type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label shadow-[0_0_20px_rgba(74,144,226,0.2)] border border-[#4A90E2]/35">
+              <button id="emptyAddTeacherBtn" type="button" class="btn-3d inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-label font-semibold">
                 <span class="material-symbols-outlined text-[18px]">person_add</span>
                 <span>Add New Professor</span>
               </button>
             </div>
           ` : filtered.length === 0 ? `
-            <div class="p-10 rounded-xl bg-white/85/75 border border-glass-border text-center space-y-3">
-              <p class="text-sm text-[#172B4D] font-label">No matching teachers found.</p>
-              <button id="clearTeaFiltersBtn" type="button" class="px-4 py-1.5 rounded-md bg-[#F0F8FF] border border-[#4A90E2]/10 text-xs text-[#64748B] hover:text-[#172B4D]">Clear Filters</button>
+            <div class="corp-card p-10 text-center space-y-3">
+              <p class="text-sm text-[#0F172A] font-label">No matching teachers found.</p>
+              <button id="clearTeaFiltersBtn" type="button" class="btn-3d px-4 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs text-slate-700 hover:bg-slate-200">Clear Filters</button>
             </div>
           ` : `
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Corporate Data Table (Desktop / Tablet) -->
+            <div class="hidden md:block corp-card overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="corp-table w-full text-left border-collapse">
+                  <thead>
+                    <tr>
+                      <th class="p-3.5 pl-5">Faculty Member</th>
+                      <th class="p-3.5">Staff ID</th>
+                      <th class="p-3.5">Department &amp; Course</th>
+                      <th class="p-3.5">Room / Hall</th>
+                      <th class="p-3.5">Classes</th>
+                      <th class="p-3.5">Status</th>
+                      <th class="p-3.5 pr-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-xs">
+                    ${filtered.map((t) => {
+    const isLive = t.status === 'Streaming Live';
+    const classesCount = Number(t.classesToday) || 0;
+    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                          <td class="p-3.5 pl-5">
+                            <div class="flex items-center gap-3">
+                              <div class="w-9 h-9 rounded-lg bg-[#0F172A] text-white font-headline font-bold flex items-center justify-center shrink-0">
+                                ${esc(t.initials)}
+                              </div>
+                              <div class="min-w-0">
+                                <div class="font-semibold text-[#0F172A] text-sm">${esc(t.name)}</div>
+                                <div class="text-[11px] text-slate-500 font-code truncate">${esc(t.email || '—')}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="p-3.5 font-code text-[#1E3A8A] font-semibold">${esc(t.staffId)}</td>
+                          <td class="p-3.5">
+                            <div class="font-medium text-[#0F172A]">${esc(t.department || '—')}</div>
+                            <div class="text-[11px] text-slate-500">${esc(t.course || '—')}</div>
+                          </td>
+                          <td class="p-3.5 font-code text-slate-600">${esc(t.hall || 'Unassigned')}</td>
+                          <td class="p-3.5 font-code text-slate-700">${classesCount}</td>
+                          <td class="p-3.5">
+                            <span class="px-2.5 py-0.5 rounded-full font-code text-[11px] border inline-flex items-center gap-1 ${isLive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}">
+                              ${isLive ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>` : ''}
+                              ${esc(t.statusBadge || t.status || 'Offline')}
+                            </span>
+                          </td>
+                          <td class="p-3.5 pr-5 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                              <button type="button" data-toggle-tea="${esc(t.id)}" class="btn-3d px-2.5 py-1 rounded-md ${isLive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#0F172A] text-white'} text-[11px] font-label inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">videocam</span>
+                                <span>${isLive ? 'End Live' : 'Start Live'}</span>
+                              </button>
+                              <button type="button" data-edit-tea="${esc(t.id)}" class="btn-3d p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-[#0F172A]" title="Edit Teacher">
+                                <span class="material-symbols-outlined text-[17px]">edit</span>
+                              </button>
+                              <button type="button" data-del-tea="${esc(t.id)}" class="btn-3d p-1.5 rounded-md hover:bg-rose-50 text-slate-500 hover:text-rose-600" title="Remove Teacher">
+                                <span class="material-symbols-outlined text-[17px]">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+  }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Corporate Mobile Cards (Phone view) -->
+            <div class="grid grid-cols-1 gap-4 md:hidden">
               ${filtered.map((t) => {
-                const isLive = t.status === 'Streaming Live';
-                const classesCount = Number(t.classesToday) || 0;
-                return `
-                  <article class="p-5 rounded-xl bg-white/80 border ${isLive ? 'border-[#4A90E2]/30 shadow-[0_4px_24px_rgba(74,144,226,0.18)]' : 'border-glass-border shadow-[0_4px_24px_rgba(0,0,0,0.5)]'} space-y-4 relative group">
+    const isLive = t.status === 'Streaming Live';
+    const classesCount = Number(t.classesToday) || 0;
+    return `
+                  <article class="corp-card card-3d p-5 space-y-4">
                     <div class="flex items-start justify-between gap-2">
                       <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-neon-purple to-deep-violet p-[1.5px] shrink-0">
-                          <div class="w-full h-full rounded-xl bg-white flex items-center justify-center font-headline text-[#172B4D] font-bold">
-                            ${esc(t.initials)}
-                          </div>
+                        <div class="w-11 h-11 rounded-lg bg-[#0F172A] text-white flex items-center justify-center font-headline font-bold shrink-0">
+                          ${esc(t.initials)}
                         </div>
                         <div class="min-w-0">
-                          <h3 class="font-headline text-title-md text-[#172B4D] truncate">${esc(t.name)}</h3>
-                          <span class="font-code text-[11px] text-neon-purple block truncate">${esc(t.staffId)}</span>
+                          <h3 class="font-headline text-base font-bold text-[#0F172A] truncate">${esc(t.name)}</h3>
+                          <span class="font-code text-[11px] text-[#1E3A8A] block truncate">${esc(t.staffId)}</span>
                         </div>
                       </div>
-                      <span class="px-2 py-0.5 rounded-full font-code text-[11px] border flex items-center gap-1 shrink-0 ${
-                        isLive ? 'bg-success/20 text-success border-success/40' : 'bg-[#E6F4FF] text-[#64748B] border-white/20'
-                      }">
-                        ${isLive ? `<span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>` : ''}
+                      <span class="px-2 py-0.5 rounded-full font-code text-[11px] border flex items-center gap-1 shrink-0 ${isLive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}">
+                        ${isLive ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>` : ''}
                         ${esc(t.statusBadge || t.status || 'Offline')}
                       </span>
                     </div>
 
                     <div class="space-y-1.5 text-xs">
-                      <div class="flex items-center justify-between gap-2 text-[#64748B]/70">
+                      <div class="flex items-center justify-between gap-2 text-slate-500">
                         <span>Email:</span>
-                        <span class="text-[#64748B] font-code text-[11px] truncate">${esc(t.email || '—')}</span>
+                        <span class="text-slate-700 font-code text-[11px] truncate">${esc(t.email || '—')}</span>
                       </div>
-                      <div class="flex items-center justify-between gap-2 text-[#64748B]/70">
+                      <div class="flex items-center justify-between gap-2 text-slate-500">
                         <span>Department:</span>
-                        <span class="text-[#172B4D] font-medium truncate">${esc(t.department || '—')}</span>
+                        <span class="text-[#0F172A] font-medium truncate">${esc(t.department || '—')}</span>
                       </div>
-                      <div class="flex items-center justify-between gap-2 text-[#64748B]/70">
+                      <div class="flex items-center justify-between gap-2 text-slate-500">
                         <span>Course:</span>
-                        <span class="text-[#172B4D] font-medium truncate">${esc(t.course || '—')}</span>
+                        <span class="text-[#0F172A] font-medium truncate">${esc(t.course || '—')}</span>
                       </div>
-                      <div class="flex items-center justify-between gap-2 text-[#64748B]/70">
+                      <div class="flex items-center justify-between gap-2 text-slate-500">
                         <span>Room / Hall:</span>
-                        <span class="text-[#172B4D] font-code text-[11px] truncate">${esc(t.hall || 'Unassigned')}</span>
+                        <span class="text-[#0F172A] font-code text-[11px] truncate">${esc(t.hall || 'Unassigned')}</span>
                       </div>
                     </div>
 
-                    <div class="pt-3 border-t border-glass-border flex items-center justify-between gap-2">
-                      <span class="text-xs font-code text-[#64748B]/60">${classesCount} ${classesCount === 1 ? 'Class' : 'Classes'} Today</span>
+                    <div class="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                      <span class="text-xs font-code text-slate-500">${classesCount} ${classesCount === 1 ? 'Class' : 'Classes'} Today</span>
                       <div class="flex items-center gap-1.5">
-                        <button type="button" data-toggle-tea="${esc(t.id)}" class="px-2.5 py-1 rounded-md ${isLive ? 'bg-success/20 text-success border border-success/40' : 'bg-[#F0F8FF] hover:bg-[#4A90E2]/10 text-[#64748B] hover:text-[#172B4D] border border-glass-border'} text-xs font-label flex items-center gap-1 transition-colors">
+                        <button type="button" data-toggle-tea="${esc(t.id)}" class="btn-3d px-2.5 py-1 rounded-md ${isLive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#0F172A] text-white'} text-xs font-label flex items-center gap-1">
                           <span class="material-symbols-outlined text-[15px]">videocam</span>
                           <span>${isLive ? 'End Live' : 'Start Live'}</span>
                         </button>
-                        <button type="button" data-edit-tea="${esc(t.id)}" class="p-1.5 rounded hover:bg-[#E6F4FF] text-[#64748B] hover:text-[#172B4D]" title="Edit Teacher">
+                        <button type="button" data-edit-tea="${esc(t.id)}" class="btn-3d p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-[#0F172A]" title="Edit Teacher">
                           <span class="material-symbols-outlined text-[17px]">edit</span>
                         </button>
-                        <button type="button" data-del-tea="${esc(t.id)}" class="p-1.5 rounded hover:bg-error/20 text-[#64748B] hover:text-error" title="Remove Teacher">
+                        <button type="button" data-del-tea="${esc(t.id)}" class="btn-3d p-1.5 rounded hover:bg-rose-50 text-slate-500 hover:text-rose-600" title="Remove Teacher">
                           <span class="material-symbols-outlined text-[17px]">delete</span>
                         </button>
                       </div>
                     </div>
                   </article>
                 `;
-              }).join('')}
+  }).join('')}
             </div>
           `}
         </main>
@@ -1356,12 +1419,12 @@ function openMaterialModal(existing = null) {
   const deptOpts = getDepartmentOptions();
   let pendingFile = existing
     ? {
-        fileName: existing.fileName || '',
-        mimeType: existing.mimeType || '',
-        fileDataUrl: existing.fileDataUrl || '',
-        size: existing.size || '',
-        type: existing.type || 'pdf',
-      }
+      fileName: existing.fileName || '',
+      mimeType: existing.mimeType || '',
+      fileDataUrl: existing.fileDataUrl || '',
+      size: existing.size || '',
+      type: existing.type || 'pdf',
+    }
     : null;
 
   openModal(`
@@ -1576,26 +1639,26 @@ export function renderAdminResources(container) {
   const { materials, assignments, notices } = store.state;
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-admin min-h-screen flex">
       ${renderAdminSidebar('admin/resources')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="admin-header sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
-              <h1 class="font-headline text-headline-sm text-[#172B4D]">Materials, Assignments &amp; Notices</h1>
-              <p class="text-body-sm text-[#64748B]/70">Upload PDFs, documents, images, assignments, and announcements with full Edit &amp; Delete control</p>
+              <h1 class="font-headline text-xl font-bold text-[#0F172A] tracking-tight">Materials, Assignments &amp; Notices</h1>
+              <p class="text-xs text-slate-500 mt-0.5">Upload PDFs, documents, images, assignments, and announcements with full Edit &amp; Delete control</p>
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2.5">
-            <button id="resNoticeBtn" type="button" class="px-4 py-2 rounded-md bg-[#F0F8FF] hover:bg-[#E6F4FF] text-[#172B4D] text-xs border border-glass-border flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[16px] text-amber-400">campaign</span> Publish Notice
+            <button id="resNoticeBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-label font-medium border border-slate-200 flex items-center gap-1.5 shadow-xs">
+              <span class="material-symbols-outlined text-[16px] text-amber-500">campaign</span> Publish Notice
             </button>
-            <button id="resAsgBtn" type="button" class="px-4 py-2 rounded-md bg-[#F0F8FF] hover:bg-[#E6F4FF] text-[#172B4D] text-xs border border-glass-border flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[16px] text-success">assignment_add</span> Post Assignment
+            <button id="resAsgBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-label font-medium border border-slate-200 flex items-center gap-1.5 shadow-xs">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">assignment_add</span> Post Assignment
             </button>
-            <button id="resMatBtn" type="button" class="px-4 py-2 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label flex items-center gap-1.5 shadow-[0_0_16px_rgba(74,144,226,0.4)]">
+            <button id="resMatBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold flex items-center gap-1.5 shadow-sm">
               <span class="material-symbols-outlined text-[16px]">cloud_upload</span> Upload Material
             </button>
           </div>
@@ -1745,18 +1808,14 @@ export function renderAdminResources(container) {
       if (!mat) return;
       showToast(`Downloading "${mat.fileName || mat.title}"...`, 'info');
       try {
-        const targetFilename = mat.fileName || `${mat.title}.${mat.type || 'pdf'}`;
-        if (mat.id && (mat.fileUrl || mat.fileDataUrl)) {
-          const dlUrl = `/api/download?id=${encodeURIComponent(mat.id)}`;
-          await downloadFromUrl(dlUrl, targetFilename);
-        } else if (mat.fileUrl) {
-          await downloadFromUrl(mat.fileUrl, targetFilename);
+        if (mat.fileUrl) {
+          await downloadFromUrl(mat.fileUrl, mat.fileName || `${mat.title}.${mat.type || 'pdf'}`);
         } else if (mat.fileDataUrl) {
-          downloadDataUrl(targetFilename, mat.fileDataUrl);
+          downloadDataUrl(mat.fileName || `${mat.title}.${mat.type || 'pdf'}`, mat.fileDataUrl);
         } else {
           downloadTextFile(`${mat.title.replace(/[^a-z0-9]+/gi, '_')}.txt`, `${mat.title}\n\n${mat.summary || ''}\n`);
         }
-        showToast(`Downloaded "${targetFilename}"`, 'success');
+        showToast(`Downloaded "${mat.fileName || mat.title}"`, 'success');
       } catch {
         showToast('Download failed. Please try again.', 'error');
       }
@@ -2022,29 +2081,29 @@ export function renderAdminTimetable(container) {
   });
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-admin min-h-screen flex">
       ${renderAdminSidebar('admin/timetable')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="admin-header sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
-              <h1 class="font-headline text-headline-sm text-[#172B4D]">Timetable &amp; Events Management</h1>
-              <p class="text-body-sm text-[#64748B]/70">Upload your official college timetable image as-is, or build periods and campus events manually</p>
+              <h1 class="font-headline text-xl font-bold text-[#0F172A] tracking-tight">Timetable &amp; Events Management</h1>
+              <p class="text-xs text-slate-500 mt-0.5">Upload your official college timetable image as-is, or build periods and campus events manually</p>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5">
-            <button id="ttUploadImgBtn" type="button" class="px-4 py-2 rounded-md bg-[#F0F8FF] hover:bg-[#E6F4FF] text-[#172B4D] text-xs border border-[#4A90E2]/25 flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[16px] text-neon-purple">upload_file</span>
+            <button id="ttUploadImgBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-label font-medium border border-slate-200 flex items-center gap-1.5 shadow-xs">
+              <span class="material-symbols-outlined text-[16px] text-[#2563EB]">upload_file</span>
               <span>${timetableImage ? 'Replace Timetable Image' : 'Upload Timetable Image'}</span>
             </button>
-            <button id="ttAddEventBtn" type="button" class="px-4 py-2 rounded-md bg-[#F0F8FF] hover:bg-[#E6F4FF] text-[#172B4D] text-xs border border-glass-border flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[16px] text-emerald-400">event</span>
+            <button id="ttAddEventBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-label font-medium border border-slate-200 flex items-center gap-1.5 shadow-xs">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">event</span>
               <span>Add Event</span>
             </button>
-            <button id="ttScheduleBtn" type="button" class="px-4 py-2 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label shadow-[0_0_18px_rgba(74,144,226,0.2)] border border-[#4A90E2]/35 flex items-center gap-1.5">
+            <button id="ttScheduleBtn" type="button" class="btn-3d px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold shadow-sm flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px]">add_circle</span>
               <span>Add Manual Period</span>
             </button>
@@ -2136,8 +2195,8 @@ export function renderAdminTimetable(container) {
                       <div class="grid grid-cols-7 divide-x divide-glass-border min-h-[96px]">
                         <div class="p-3 font-code text-[#64748B]/70 flex items-center justify-center bg-[#E6F4FF]/60 text-center">${esc(slot)}</div>
                         ${DAYS.map((day) => {
-                          const cell = timetable.find((x) => x.day === day && x.slot === slot);
-                          return `
+    const cell = timetable.find((x) => x.day === day && x.slot === slot);
+    return `
                             <div class="p-2">
                               ${cell ? `
                                 <div class="h-full p-2.5 rounded-lg border ${cell.live ? 'bg-gradient-to-r from-[#EBF4FF] to-[#E0EFFF] border-neon-purple' : 'bg-[#F0F8FF] border-glass-border'} flex flex-col justify-between gap-1.5">
@@ -2156,7 +2215,7 @@ export function renderAdminTimetable(container) {
                               ` : `<div class="h-full rounded-lg border border-dashed border-glass-border/30 flex items-center justify-center text-[10px] text-[#64748B]/30">—</div>`}
                             </div>
                           `;
-                        }).join('')}
+  }).join('')}
                       </div>
                     `).join('')}
                   </div>
@@ -2493,20 +2552,20 @@ export function renderAdminSettings(container) {
   const programs = settings.programs || [];
 
   container.innerHTML = `
-    <div class="min-h-screen flex">
+    <div class="theme-admin min-h-screen flex">
       ${renderAdminSidebar('admin/settings')}
 
       <div class="flex-1 flex flex-col min-w-0">
-        <header class="sticky top-0 z-20 bg-[#F0F8FF]/90 backdrop-blur-xl border-b border-glass-border px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+        <header class="admin-header sticky top-0 z-20 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center gap-3">
             ${renderMobileMenuButton()}
             <div>
-              <h1 class="font-headline text-headline-sm text-[#172B4D]">College Branding &amp; Architecture Settings</h1>
-              <p class="text-body-sm text-[#64748B]/70">Configure your institution identity, administrator profile, departments, and academic programs</p>
+              <h1 class="font-headline text-xl font-bold text-[#0F172A] tracking-tight">College Branding &amp; Architecture Settings</h1>
+              <p class="text-xs text-slate-500 mt-0.5">Configure your institution identity, administrator profile, departments, and academic programs</p>
             </div>
           </div>
 
-          <button id="saveSettingsBtn" type="button" class="px-5 py-2.5 rounded-md bg-gradient-to-r from-[#4A90E2] to-[#2563EB] text-white text-xs font-label shadow-[0_0_20px_rgba(74,144,226,0.2)] border border-[#4A90E2]/35 flex items-center gap-1.5 active:scale-95 transition-transform">
+          <button id="saveSettingsBtn" type="button" class="btn-3d px-5 py-2.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-label font-semibold shadow-sm flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[16px]">save</span>
             <span>Save All Settings</span>
           </button>
@@ -2530,8 +2589,8 @@ export function renderAdminSettings(container) {
                 <div class="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-neon-purple to-deep-violet p-[2px] shadow-[0_0_20px_rgba(74,144,226,0.2)]">
                   <div class="w-full h-full rounded-2xl bg-white flex items-center justify-center text-neon-purple overflow-hidden">
                     ${settings.logoDataUrl
-                      ? `<img src="${esc(settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Logo" />`
-                      : `<span class="material-symbols-outlined text-[44px]">school</span>`}
+      ? `<img src="${esc(settings.logoDataUrl)}" class="w-full h-full object-cover" alt="Logo" />`
+      : `<span class="material-symbols-outlined text-[44px]">school</span>`}
                   </div>
                 </div>
                 <div class="flex items-center justify-center gap-2">
@@ -2617,8 +2676,8 @@ export function renderAdminSettings(container) {
             ` : `
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${departments.map((d) => {
-                  const deptStudents = store.state.students.filter((s) => s.department === (d.shortName || d.name)).length;
-                  return `
+        const deptStudents = store.state.students.filter((s) => s.department === (d.shortName || d.name)).length;
+        return `
                     <div class="p-4 rounded-lg bg-[#E6F4FF]/60 border border-glass-border hover:border-[#4A90E2]/40 transition-colors space-y-2">
                       <div class="flex items-start justify-between gap-2">
                         <div>
@@ -2642,7 +2701,7 @@ export function renderAdminSettings(container) {
                       ` : ''}
                     </div>
                   `;
-                }).join('')}
+      }).join('')}
               </div>
             `}
           </section>
